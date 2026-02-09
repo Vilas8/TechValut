@@ -44,9 +44,8 @@ export default function Products() {
   const [sortBy, setSortBy] = useState('featured');
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Parse search query from URL on mount and when location changes
-  // Handle both standard query params (?search=) and path-based params (/search=)
-  useEffect(() => {
+  // Enhanced URL monitoring - updates search from URL parameters
+  const updateSearchFromURL = () => {
     let search = '';
     
     // Try standard query parameter format first: ?search=query
@@ -62,7 +61,25 @@ export default function Products() {
     }
     
     setSearchQuery(search);
-    console.log('Search query parsed:', search, 'from location:', location);
+    console.log('Search query updated:', search, 'from location:', location);
+  };
+
+  // Monitor URL changes from multiple sources
+  useEffect(() => {
+    // Initial load
+    updateSearchFromURL();
+
+    // Listen for browser back/forward and URL changes
+    const handlePopState = () => {
+      updateSearchFromURL();
+    };
+
+    window.addEventListener('popstate', handlePopState);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('popstate', handlePopState);
+    };
   }, [location]);
 
   const filteredProducts = PRODUCTS.filter((product) => {
