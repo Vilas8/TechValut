@@ -1,24 +1,24 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { Zap, Grid, List } from 'lucide-react';
 import { NavigationHeader } from '@/components/NavigationHeader';
 import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 
-// Real products data with slugs and images
+// Real products data with realistic INR pricing
 const PRODUCTS = [
-  { id: 1, name: 'MacBook Pro 16"', slug: 'macbook-pro-16', price: 249900, originalPrice: 299900, category: 'Laptops', rating: 4.8, reviews: 342, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/wVEtjEqxIBaKourD.png' },
-  { id: 2, name: 'Dell XPS 15', slug: 'dell-xps-15', price: 189900, originalPrice: 229900, category: 'Laptops', rating: 4.7, reviews: 298, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/yUthukxxpqnlZrsE.png' },
-  { id: 3, name: 'iPhone 15 Pro Max', slug: 'iphone-15-pro-max', price: 159900, originalPrice: 179900, category: 'Smartphones', rating: 4.9, reviews: 512, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/PEDTHAQjEVxQIkSf.png' },
-  { id: 4, name: 'Samsung Galaxy S24', slug: 'samsung-galaxy-s24', price: 129900, originalPrice: 149900, category: 'Smartphones', rating: 4.6, reviews: 287, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/nWKmLGBrzbTNKISn.png' },
-  { id: 5, name: 'Sony WH-1000XM5', slug: 'sony-wh-1000xm5', price: 39900, originalPrice: 49900, category: 'Audio', rating: 4.8, reviews: 623, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/lbIPPOlTeWArjRKW.png' },
-  { id: 6, name: 'Bose QuietComfort 45', slug: 'bose-quietcomfort-45', price: 34900, originalPrice: 44900, category: 'Audio', rating: 4.7, reviews: 456, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/RAHWifcxzOSkspNm.png' },
-  { id: 7, name: 'Apple Watch Series 9', slug: 'apple-watch-series-9', price: 49900, originalPrice: 59900, category: 'Wearables', rating: 4.8, reviews: 389, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/xzOPweGiTciyybIN.png' },
-  { id: 8, name: 'Samsung Galaxy Watch 6', slug: 'samsung-galaxy-watch-6', price: 39900, originalPrice: 49900, category: 'Wearables', rating: 4.5, reviews: 267, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/IPIEIiJHiQBKCXvD.png' },
-  { id: 9, name: 'USB-C Hub Pro', slug: 'usb-c-hub-pro', price: 8990, originalPrice: 12990, category: 'Accessories', rating: 4.6, reviews: 178, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/DnhogxHIoQuaIqxg.png' },
-  { id: 10, name: 'Wireless Charging Pad', slug: 'wireless-charging-pad', price: 4990, originalPrice: 7990, category: 'Accessories', rating: 4.4, reviews: 234, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/VmoxzJQuoBYFaQBe.png' },
-  { id: 11, name: 'Lenovo ThinkPad X1', slug: 'lenovo-thinkpad-x1', price: 169900, originalPrice: 199900, category: 'Laptops', rating: 4.7, reviews: 321, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/GhWQecoDbVhWVQnT.png' },
-  { id: 12, name: 'Google Pixel 8 Pro', slug: 'google-pixel-8-pro', price: 139900, originalPrice: 159900, category: 'Smartphones', rating: 4.8, reviews: 445, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/wlRbBFzTMjRWgUBH.png' },
+  { id: 1, name: 'MacBook Pro 16"', slug: 'macbook-pro-16', price: 249999, originalPrice: 299999, category: 'Laptops', rating: 4.8, reviews: 342, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/wVEtjEqxIBaKourD.png' },
+  { id: 2, name: 'Dell XPS 15', slug: 'dell-xps-15', price: 189999, originalPrice: 229999, category: 'Laptops', rating: 4.7, reviews: 298, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/yUthukxxpqnlZrsE.png' },
+  { id: 3, name: 'iPhone 15 Pro Max', slug: 'iphone-15-pro-max', price: 159999, originalPrice: 179999, category: 'Smartphones', rating: 4.9, reviews: 512, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/PEDTHAQjEVxQIkSf.png' },
+  { id: 4, name: 'Samsung Galaxy S24 Ultra', slug: 'samsung-galaxy-s24', price: 129999, originalPrice: 149999, category: 'Smartphones', rating: 4.6, reviews: 287, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/nWKmLGBrzbTNKISn.png' },
+  { id: 5, name: 'Sony WH-1000XM5', slug: 'sony-wh-1000xm5', price: 29999, originalPrice: 34999, category: 'Audio', rating: 4.8, reviews: 623, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/lbIPPOlTeWArjRKW.png' },
+  { id: 6, name: 'Bose QuietComfort 45', slug: 'bose-quietcomfort-45', price: 24999, originalPrice: 29999, category: 'Audio', rating: 4.7, reviews: 456, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/RAHWifcxzOSkspNm.png' },
+  { id: 7, name: 'Apple Watch Series 9', slug: 'apple-watch-series-9', price: 44999, originalPrice: 49999, category: 'Wearables', rating: 4.8, reviews: 389, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/xzOPweGiTciyybIN.png' },
+  { id: 8, name: 'Samsung Galaxy Watch 6', slug: 'samsung-galaxy-watch-6', price: 29999, originalPrice: 34999, category: 'Wearables', rating: 4.5, reviews: 267, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/IPIEIiJHiQBKCXvD.png' },
+  { id: 9, name: 'Anker USB-C Hub Pro', slug: 'usb-c-hub-pro', price: 3499, originalPrice: 4999, category: 'Accessories', rating: 4.6, reviews: 178, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/DnhogxHIoQuaIqxg.png' },
+  { id: 10, name: 'Belkin Wireless Charging Pad', slug: 'wireless-charging-pad', price: 2499, originalPrice: 3499, category: 'Accessories', rating: 4.4, reviews: 234, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/VmoxzJQuoBYFaQBe.png' },
+  { id: 11, name: 'Lenovo ThinkPad X1 Carbon', slug: 'lenovo-thinkpad-x1', price: 169999, originalPrice: 199999, category: 'Laptops', rating: 4.7, reviews: 321, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/GhWQecoDbVhWVQnT.png' },
+  { id: 12, name: 'Google Pixel 8 Pro', slug: 'google-pixel-8-pro', price: 106999, originalPrice: 119999, category: 'Smartphones', rating: 4.8, reviews: 445, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/wlRbBFzTMjRWgUBH.png' },
 ];
 
 const CATEGORIES = [
@@ -29,17 +29,32 @@ const CATEGORIES = [
   { id: 5, name: 'Accessories', slug: 'accessories' },
 ];
 
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
 export default function Products() {
   const [location] = useLocation();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('featured');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const searchParams = new URLSearchParams(location.split('?')[1] || '');
-  const searchQuery = searchParams.get('search') || '';
+  // Parse search query from URL on mount and when location changes
+  useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1] || '');
+    const search = params.get('search') || '';
+    setSearchQuery(search);
+  }, [location]);
 
   const filteredProducts = PRODUCTS.filter((product) => {
-    const matchesSearch = !searchQuery || product.name.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesSearch = !searchQuery || 
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.category.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesCategory = !selectedCategory || product.category.toLowerCase() === selectedCategory;
     return matchesSearch && matchesCategory;
   });
@@ -67,7 +82,7 @@ export default function Products() {
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Products</h1>
           <p className="text-foreground/60">
-            {searchQuery ? `Search results for "${searchQuery}"` : 'Browse our collection of premium electronics'}
+            {searchQuery ? `Search results for "${searchQuery}" (${sortedProducts.length} found)` : 'Browse our collection of premium electronics'}
           </p>
         </div>
 
@@ -242,11 +257,16 @@ export default function Products() {
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
                           <div className="text-2xl font-bold text-accent">
-                            ₹{(product.price / 100).toFixed(0)}
+                            {formatPrice(product.price)}
                           </div>
                           {product.originalPrice > product.price && (
-                            <div className="text-sm line-through text-foreground/50">
-                              ₹{(product.originalPrice / 100).toFixed(0)}
+                            <div className="flex items-center gap-2">
+                              <div className="text-sm line-through text-foreground/50">
+                                {formatPrice(product.originalPrice)}
+                              </div>
+                              <span className="text-xs font-semibold text-green-500 bg-green-500/10 px-2 py-0.5 rounded">
+                                {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                              </span>
                             </div>
                           )}
                         </div>
@@ -264,6 +284,11 @@ export default function Products() {
               <div className="text-center py-12 space-y-4">
                 <Zap size={48} className="text-foreground/20 mx-auto" />
                 <p className="text-foreground/60">No products found matching your criteria</p>
+                {searchQuery && (
+                  <Button onClick={() => window.location.href = '/products'} className="btn-secondary">
+                    Clear Search
+                  </Button>
+                )}
               </div>
             )}
           </div>
