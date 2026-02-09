@@ -7,8 +7,8 @@ const FEATURED_PRODUCTS = [
   {
     name: 'MacBook Pro 16"',
     slug: 'macbook-pro-16',
-    price: 249999,
-    originalPrice: 299999,
+    price: 249900,
+    originalPrice: 299900,
     description: 'Powerful laptop for professionals and creators',
     rating: 4.8,
     image: 'https://private-us-east-1.manuscdn.com/sessionFile/70BeSONjdgQMeROPsWItJC/sandbox/uHQwCBm1WL5LUA5aADjqXp-img-1_1770608381000_na1fn_ZmVhdHVyZWQtbWFjYm9vay1oZXJv.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvNzBCZVNPTmpkZ1FNZVJPUHNXSXRKQy9zYW5kYm94L3VIUXdDQm0xV0w1TFVBNWFBRGpxWHAtaW1nLTFfMTc3MDYwODM4MTAwMF9uYTFmbl9abVZoZEhWeVpXUXRiV0ZqWW05dmF5MW9aWEp2LnBuZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSx3XzE5MjAsaF8xOTIwL2Zvcm1hdCx3ZWJwL3F1YWxpdHkscV84MCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5ODc2MTYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=Qp1A24INZnOg7fFlwbd1aLAyquHX9DxDlobZe6AKEN8VdSYXUyWfa6uphzFpI-S2gtUvNo2fnY3YweXRJDHTtBR6df45iBlnuubMA1cVDIeag0lofI9nw5rDjeaw7wO7ggpyWthjZkCRBhprL5Wc3TSfRLdIUl8mkiTT-kob7gT5g42e0wBpro8k7-8Cq3PnLr-HaxCgsBWw8LaXOV5e85J~fgjaxDNcOiMte0OlMN3aDxj-U1K-z64JeYKLsEDwe3HYkhufb9STH8z-0W4vUcd1DTVsJrFQd9uPsvZhrfD1Xz6TZBvsXNKNPokGO6YEnr77O74gWjUjDrBkdrExwg__',
