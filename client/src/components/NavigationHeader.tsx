@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X, ShoppingCart, Search, Moon, Sun } from 'lucide-react';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useCart } from '@/contexts/CartContext';
@@ -9,7 +9,14 @@ export function NavigationHeader() {
   const [searchQuery, setSearchQuery] = useState('');
   const { theme, toggleTheme } = useTheme();
   const { totalItems } = useCart();
-  const [, setLocation] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  // Sync search input with URL parameters
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const search = params.get('search') || '';
+    setSearchQuery(search);
+  }, [location]);
 
   const navItems = [
     { label: 'Home', href: '/' },
