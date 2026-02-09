@@ -7,7 +7,8 @@ const FEATURED_PRODUCTS = [
   {
     name: 'MacBook Pro 16"',
     slug: 'macbook-pro-16',
-    price: 249900,
+    price: 249999,
+    originalPrice: 299999,
     description: 'Powerful laptop for professionals and creators',
     rating: 4.8,
     image: 'https://private-us-east-1.manuscdn.com/sessionFile/70BeSONjdgQMeROPsWItJC/sandbox/uHQwCBm1WL5LUA5aADjqXp-img-1_1770608381000_na1fn_ZmVhdHVyZWQtbWFjYm9vay1oZXJv.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvNzBCZVNPTmpkZ1FNZVJPUHNXSXRKQy9zYW5kYm94L3VIUXdDQm0xV0w1TFVBNWFBRGpxWHAtaW1nLTFfMTc3MDYwODM4MTAwMF9uYTFmbl9abVZoZEhWeVpXUXRiV0ZqWW05dmF5MW9aWEp2LnBuZz94LW9zcy1wcm9jZXNzPWltYWdlL3Jlc2l6ZSx3XzE5MjAsaF8xOTIwL2Zvcm1hdCx3ZWJwL3F1YWxpdHkscV84MCIsIkNvbmRpdGlvbiI6eyJEYXRlTGVzc1RoYW4iOnsiQVdTOkVwb2NoVGltZSI6MTc5ODc2MTYwMH19fV19&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=Qp1A24INZnOg7fFlwbd1aLAyquHX9DxDlobZe6AKEN8VdSYXUyWfa6uphzFpI-S2gtUvNo2fnY3YweXRJDHTtBR6df45iBlnuubMA1cVDIeag0lofI9nw5rDjeaw7wO7ggpyWthjZkCRBhprL5Wc3TSfRLdIUl8mkiTT-kob7gT5g42e0wBpro8k7-8Cq3PnLr-HaxCgsBWw8LaXOV5e85J~fgjaxDNcOiMte0OlMN3aDxj-U1K-z64JeYKLsEDwe3HYkhufb9STH8z-0W4vUcd1DTVsJrFQd9uPsvZhrfD1Xz6TZBvsXNKNPokGO6YEnr77O74gWjUjDrBkdrExwg__',
@@ -15,7 +16,8 @@ const FEATURED_PRODUCTS = [
   {
     name: 'iPhone 15 Pro Max',
     slug: 'iphone-15-pro-max',
-    price: 159900,
+    price: 159999,
+    originalPrice: 179999,
     description: 'Latest flagship smartphone with advanced features',
     rating: 4.9,
     image: 'https://private-us-east-1.manuscdn.com/sessionFile/70BeSONjdgQMeROPsWItJC/sandbox/uHQwCBm1WL5LUA5aADjqXp-img-2_1770608384000_na1fn_ZmVhdHVyZWQtaXBob25lLWhlcm8.png?x-oss-process=image/resize,w_1920,h_1920/format,webp/quality,q_80&Expires=1798761600&Policy=eyJTdGF0ZW1lbnQiOlt7IlJlc291cmNlIjoiaHR0cHM6Ly9wcml2YXRlLXVzLWVhc3QtMS5tYW51c2Nkbi5jb20vc2Vzc2lvbkZpbGUvNzBCZVNPTmpkZ1FNZVJPUHNXSXRKQy9zYW5kYm94L3VIUXdDQm0xV0w1TFVBNWFBRGpxWHAtaW1nLTJfMTc3MDYwODM4NDAwMF9uYTFmbl9abVZoZEhWeVpXUXRhWEJvYjI1bExXaGxjbTgucG5nP3gtb3NzLXByb2Nlc3M9aW1hZ2UvcmVzaXplLHdfMTkyMCxoXzE5MjAvZm9ybWF0LHdlYnAvcXVhbGl0eSxxXzgwIiwiQ29uZGl0aW9uIjp7IkRhdGVMZXNzVGhhbiI6eyJBV1M6RXBvY2hUaW1lIjoxNzk4NzYxNjAwfX19XX0_&Key-Pair-Id=K2HSFNDJXOU9YS&Signature=o5lxetlasdyY1p1waDsMLA9XskcwATlmZtn~BEKvhxDV2tANzVQHATE71xYrKiuRoXi~dGjkIpFE1lFQC2HVWy8J35y9~J0kU~vyBOvcB4yWvbuVqDwF8J3ddIJxwwL0O5f8xSUR79W-r62VZ~-6ZkRdlGBQCFEpOhCyPJJbDYc3ZswjHHfjSBlH51j3xY5JKkt08AY3eQGo6HRhXHEspbPKp2-Rwb4ofyPFOr~rPH2QPWHJyDpG82LFU6RVVp7dcuVXfktthxwHZuCLmuq4vu68Y3Lwy~spQlgtQ0bNxWwpHzEQ58AuQ7g8dBWX6IDuYS-4wfioX77QePwb31aHGA__',
@@ -23,12 +25,21 @@ const FEATURED_PRODUCTS = [
   {
     name: 'Sony WH-1000XM5',
     slug: 'sony-wh-1000xm5',
-    price: 39900,
+    price: 29999,
+    originalPrice: 34999,
     description: 'Premium noise-cancelling headphones',
     rating: 4.8,
     image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/lbIPPOlTeWArjRKW.png',
   },
 ];
+
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(price);
+}
 
 export default function Home() {
   const testimonials = [
@@ -175,7 +186,21 @@ export default function Home() {
                 </div>
 
                 <div className="flex items-center justify-between">
-                  <span className="text-2xl font-bold text-accent">₹{(product.price / 100).toFixed(0)}</span>
+                  <div className="space-y-1">
+                    <div className="text-2xl font-bold text-accent">
+                      {formatPrice(product.price)}
+                    </div>
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs line-through text-foreground/50">
+                          {formatPrice(product.originalPrice)}
+                        </span>
+                        <span className="text-xs font-semibold text-green-500 bg-green-500/10 px-1.5 py-0.5 rounded">
+                          {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
+                        </span>
+                      </div>
+                    )}
+                  </div>
                   <a href={`/product/${product.slug}`}>
                     <Button className="btn-primary py-2 px-4">View</Button>
                   </a>
