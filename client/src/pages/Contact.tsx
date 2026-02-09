@@ -50,7 +50,7 @@ export default function Contact() {
     {
       icon: MapPin,
       title: 'Address',
-      value: 'San Francisco, CA',
+      value: 'Bengaluru, KA',
       description: 'Headquarters & Support Center',
     },
   ];

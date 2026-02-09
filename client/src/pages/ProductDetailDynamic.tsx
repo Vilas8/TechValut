@@ -12,7 +12,7 @@ const PRODUCTS_DB = [
     id: 1, 
     name: 'MacBook Pro 16"', 
     slug: 'macbook-pro-16', 
-    price: 249900, 
+    price: 349900, 
     originalPrice: 299900, 
     category: 'Laptops', 
     rating: 4.8, 
