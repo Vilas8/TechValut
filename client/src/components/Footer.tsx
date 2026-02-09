@@ -1,5 +1,31 @@
+import { Link } from 'wouter';
+
 export function Footer() {
   const currentYear = new Date().getFullYear();
+
+  const productLinks = [
+    { name: 'Laptops', href: '/products/laptops' },
+    { name: 'Smartphones', href: '/products/smartphones' },
+    { name: 'Audio', href: '/products/audio' },
+    { name: 'Wearables', href: '/products/wearables' },
+    { name: 'Accessories', href: '/products/accessories' },
+  ];
+
+  const companyLinks = [
+    { name: 'About Us', href: '/about' },
+    { name: 'Contact', href: '/contact' },
+    { name: 'Blog', href: '/company/blog' },
+    { name: 'Careers', href: '/company/careers' },
+    { name: 'Press', href: '/company/press' },
+  ];
+
+  const supportLinks = [
+    { name: 'Help Center', href: '/support/help-center' },
+    { name: 'Shipping Info', href: '/support/shipping-info' },
+    { name: 'Returns', href: '/support/returns' },
+    { name: 'FAQ', href: '/support/faq' },
+    { name: 'Contact Support', href: '/support/contact' },
+  ];
 
   return (
     <footer className="bg-card border-t border-border mt-20">
@@ -7,15 +33,17 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-8">
           {/* Brand */}
           <div className="space-y-4">
-            <div className="flex items-center gap-2">
-              <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
-                <span className="font-bold text-lg text-primary-foreground">TV</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="font-bold text-foreground">TechVault</span>
-                <span className="text-xs text-accent font-medium">Premium Tech</span>
-              </div>
-            </div>
+            <Link href="/">
+              <a className="flex items-center gap-2">
+                <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center">
+                  <span className="font-bold text-lg text-primary-foreground">TV</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="font-bold text-foreground">TechVault</span>
+                  <span className="text-xs text-accent font-medium">Premium Tech</span>
+                </div>
+              </a>
+            </Link>
             <p className="text-foreground/60 text-sm">
               Your trusted destination for premium electronics and cutting-edge technology.
             </p>
@@ -25,11 +53,13 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-foreground mb-4">Products</h3>
             <ul className="space-y-2">
-              {['Laptops', 'Smartphones', 'Audio', 'Wearables', 'Accessories'].map((item) => (
-                <li key={item}>
-                  <a href="#" className="text-foreground/60 hover:text-accent transition-colors text-sm">
-                    {item}
-                  </a>
+              {productLinks.map((item) => (
+                <li key={item.name}>
+                  <Link href={item.href}>
+                    <a className="text-foreground/60 hover:text-accent transition-colors text-sm">
+                      {item.name}
+                    </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -39,11 +69,13 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-foreground mb-4">Company</h3>
             <ul className="space-y-2">
-              {['About Us', 'Contact', 'Blog', 'Careers', 'Press'].map((item) => (
-                <li key={item}>
-                  <a href="#" className="text-foreground/60 hover:text-accent transition-colors text-sm">
-                    {item}
-                  </a>
+              {companyLinks.map((item) => (
+                <li key={item.name}>
+                  <Link href={item.href}>
+                    <a className="text-foreground/60 hover:text-accent transition-colors text-sm">
+                      {item.name}
+                    </a>
+                  </Link>
                 </li>
               ))}
             </ul>
@@ -53,11 +85,13 @@ export function Footer() {
           <div>
             <h3 className="font-semibold text-foreground mb-4">Support</h3>
             <ul className="space-y-2">
-              {['Help Center', 'Shipping Info', 'Returns', 'FAQ', 'Contact Support'].map((item) => (
-                <li key={item}>
-                  <a href="#" className="text-foreground/60 hover:text-accent transition-colors text-sm">
-                    {item}
-                  </a>
+              {supportLinks.map((item) => (
+                <li key={item.name}>
+                  <Link href={item.href}>
+                    <a className="text-foreground/60 hover:text-accent transition-colors text-sm">
+                      {item.name}
+                    </a>
+                  </Link>
                 </li>
               ))}
             </ul>
