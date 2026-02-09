@@ -5,6 +5,14 @@ import { Footer } from '@/components/Footer';
 import { Button } from '@/components/ui/button';
 import { useLocation } from 'wouter';
 
+function formatPrice(price: number): string {
+  return new Intl.NumberFormat('en-IN', {
+    style: 'currency',
+    currency: 'INR',
+    maximumFractionDigits: 0,
+  }).format(price);
+}
+
 export default function Cart() {
   const { items, removeItem, updateQuantity, subtotal } = useCart();
   const [, setLocation] = useLocation();
@@ -75,7 +83,7 @@ export default function Cart() {
 
                     <div className="flex items-center justify-between pt-2">
                       <span className="text-lg font-bold text-accent">
-                        ₹{(item.price / 100).toFixed(0)}
+                        {formatPrice(item.price)}
                       </span>
 
                       {/* Quantity Controls */}
@@ -101,7 +109,7 @@ export default function Cart() {
                     </div>
 
                     <p className="text-sm text-foreground/60 pt-2">
-                      Subtotal: ₹{((item.price * item.quantity) / 100).toFixed(0)}
+                      Subtotal: {formatPrice(item.price * item.quantity)}
                     </p>
                   </div>
                 </div>
@@ -116,16 +124,16 @@ export default function Cart() {
                 <div className="space-y-3 pb-6 border-b border-border">
                   <div className="flex justify-between text-foreground/70">
                     <span>Subtotal</span>
-                    <span>₹{(subtotal / 100).toFixed(0)}</span>
+                    <span>{formatPrice(subtotal)}</span>
                   </div>
                   <div className="flex justify-between text-foreground/70">
                     <span>Tax (10%)</span>
-                    <span>₹{(tax / 100).toFixed(0)}</span>
+                    <span>{formatPrice(tax)}</span>
                   </div>
                   <div className="flex justify-between text-foreground/70">
                     <span>Shipping</span>
                     <span className={shipping === 0 ? 'text-green-500 font-semibold' : ''}>
-                      {shipping === 0 ? 'FREE' : `₹${(shipping / 100).toFixed(0)}`}
+                      {shipping === 0 ? 'FREE' : formatPrice(shipping)}
                     </span>
                   </div>
                 </div>
@@ -133,7 +141,7 @@ export default function Cart() {
                 <div className="flex justify-between items-center">
                   <span className="font-semibold text-foreground">Total</span>
                   <span className="text-2xl font-bold text-accent">
-                    ₹{(total / 100).toFixed(0)}
+                    {formatPrice(total)}
                   </span>
                 </div>
 
