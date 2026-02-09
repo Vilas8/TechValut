@@ -45,10 +45,24 @@ export default function Products() {
   const [searchQuery, setSearchQuery] = useState('');
 
   // Parse search query from URL on mount and when location changes
+  // Handle both standard query params (?search=) and path-based params (/search=)
   useEffect(() => {
-    const params = new URLSearchParams(location.split('?')[1] || '');
-    const search = params.get('search') || '';
+    let search = '';
+    
+    // Try standard query parameter format first: ?search=query
+    const urlParams = new URLSearchParams(window.location.search);
+    search = urlParams.get('search') || '';
+    
+    // If not found, try path-based format: /products/search=query
+    if (!search && location.includes('search=')) {
+      const pathMatch = location.match(/search=([^&/]+)/);
+      if (pathMatch && pathMatch[1]) {
+        search = decodeURIComponent(pathMatch[1]);
+      }
+    }
+    
     setSearchQuery(search);
+    console.log('Search query parsed:', search, 'from location:', location);
   }, [location]);
 
   const filteredProducts = PRODUCTS.filter((product) => {
