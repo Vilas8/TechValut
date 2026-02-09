@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 
 // Real products data with realistic INR pricing
 const PRODUCTS = [
-  { id: 1, name: 'MacBook Pro 16"', slug: 'macbook-pro-16', price: 249999, originalPrice: 299999, category: 'Laptops', rating: 4.8, reviews: 342, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/wVEtjEqxIBaKourD.png' },
+  { id: 1, name: 'MacBook Pro 16"', slug: 'macbook-pro-16', price: 249900, originalPrice: 299900, category: 'Laptops', rating: 4.8, reviews: 342, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/wVEtjEqxIBaKourD.png' },
   { id: 2, name: 'Dell XPS 15', slug: 'dell-xps-15', price: 189999, originalPrice: 229999, category: 'Laptops', rating: 4.7, reviews: 298, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/yUthukxxpqnlZrsE.png' },
   { id: 3, name: 'iPhone 15 Pro Max', slug: 'iphone-15-pro-max', price: 159999, originalPrice: 179999, category: 'Smartphones', rating: 4.9, reviews: 512, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/PEDTHAQjEVxQIkSf.png' },
   { id: 4, name: 'Samsung Galaxy S24 Ultra', slug: 'samsung-galaxy-s24', price: 129999, originalPrice: 149999, category: 'Smartphones', rating: 4.6, reviews: 287, image: 'https://files.manuscdn.com/user_upload_by_module/session_file/310519663050743602/nWKmLGBrzbTNKISn.png' },
