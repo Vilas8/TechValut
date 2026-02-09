@@ -43,44 +43,50 @@ export default function Products() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('featured');
   const [searchQuery, setSearchQuery] = useState('');
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Enhanced URL monitoring - updates search from URL parameters
-  const updateSearchFromURL = () => {
-    let search = '';
-    
-    // Try standard query parameter format first: ?search=query
-    const urlParams = new URLSearchParams(window.location.search);
-    search = urlParams.get('search') || '';
-    
-    // If not found, try path-based format: /products/search=query
-    if (!search && location.includes('search=')) {
-      const pathMatch = location.match(/search=([^&/]+)/);
-      if (pathMatch && pathMatch[1]) {
-        search = decodeURIComponent(pathMatch[1]);
-      }
-    }
-    
-    setSearchQuery(search);
-    console.log('Search query updated:', search, 'from location:', location);
-  };
-
-  // Monitor URL changes from multiple sources
+  // Extract search query from URL with comprehensive parsing
   useEffect(() => {
-    // Initial load
-    updateSearchFromURL();
-
-    // Listen for browser back/forward and URL changes
-    const handlePopState = () => {
-      updateSearchFromURL();
+    const extractSearchQuery = () => {
+      let search = '';
+      
+      // Method 1: Try standard query parameters (?search=query)
+      const urlParams = new URLSearchParams(window.location.search);
+      search = urlParams.get('search') || '';
+      
+      // Method 2: Try path-based format (/products/search=query)
+      if (!search && location.includes('search=')) {
+        const pathMatch = location.match(/search=([^&/]+)/);
+        if (pathMatch && pathMatch[1]) {
+          search = decodeURIComponent(pathMatch[1]);
+        }
+      }
+      
+      console.log('🔍 Search extraction:', {
+        url: window.location.href,
+        location,
+        extractedQuery: search,
+        timestamp: new Date().toISOString()
+      });
+      
+      return search;
     };
 
-    window.addEventListener('popstate', handlePopState);
-
-    // Cleanup
-    return () => {
-      window.removeEventListener('popstate', handlePopState);
-    };
+    const newSearchQuery = extractSearchQuery();
+    setSearchQuery(newSearchQuery);
+    // Force component refresh to ensure UI updates
+    setRefreshKey(prev => prev + 1);
   }, [location]);
+
+  // Log filtered results for debugging
+  useEffect(() => {
+    console.log('📊 Current state:', {
+      searchQuery,
+      selectedCategory,
+      filteredCount: filteredProducts.length,
+      refreshKey
+    });
+  }, [searchQuery, selectedCategory, refreshKey]);
 
   const filteredProducts = PRODUCTS.filter((product) => {
     const matchesSearch = !searchQuery || 
@@ -106,14 +112,20 @@ export default function Products() {
   });
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground" key={refreshKey}>
       <NavigationHeader />
 
       <div className="container py-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Products</h1>
           <p className="text-foreground/60">
-            {searchQuery ? `Search results for "${searchQuery}" (${sortedProducts.length} found)` : 'Browse our collection of premium electronics'}
+            {searchQuery ? (
+              <>
+                Search results for <span className="font-semibold text-accent">"{searchQuery}"</span> ({sortedProducts.length} found)
+              </>
+            ) : (
+              'Browse our collection of premium electronics'
+            )}
           </p>
         </div>
 
