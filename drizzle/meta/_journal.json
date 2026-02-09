@@ -1,0 +1,27 @@
+{
+  "version": "7",
+  "dialect": "mysql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1770562258095,
+      "tag": "0000_lovely_cardiac",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1770562531421,
+      "tag": "0001_exotic_silhouette",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "5",
+      "when": 1770564649213,
+      "tag": "0002_open_silhouette",
+      "breakpoints": true
+    }
+  ]
+}
