@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useLocation } from 'wouter';
 import { Zap, Grid, List } from 'lucide-react';
 import { NavigationHeader } from '@/components/NavigationHeader';
@@ -37,95 +37,83 @@ function formatPrice(price: number): string {
   }).format(price);
 }
 
+function getSearchQueryFromUrl(location: string): string {
+  // 1) Standard query string: /products?search=iphone
+  const urlParams = new URLSearchParams(window.location.search);
+  const fromQuery = urlParams.get('search') || '';
+  if (fromQuery) return fromQuery;
+
+  // 2) Some routers generate: /products/search=iphone
+  if (location.includes('search=')) {
+    const match = location.match(/search=([^&/]+)/);
+    if (match?.[1]) return decodeURIComponent(match[1]);
+  }
+
+  // 3) Fallback: in case hosting rewrites or weird path: /products?search=iphone but location string already contains '?'
+  if (location.includes('?')) {
+    const qs = location.split('?')[1] || '';
+    const p = new URLSearchParams(qs);
+    return p.get('search') || '';
+  }
+
+  return '';
+}
+
 export default function Products() {
   const [location] = useLocation();
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [sortBy, setSortBy] = useState('featured');
   const [searchQuery, setSearchQuery] = useState('');
-  const [refreshKey, setRefreshKey] = useState(0);
 
-  // Extract search query from URL with comprehensive parsing
+  // Keep Products page search in sync with URL
   useEffect(() => {
-    const extractSearchQuery = () => {
-      let search = '';
-      
-      // Method 1: Try standard query parameters (?search=query)
-      const urlParams = new URLSearchParams(window.location.search);
-      search = urlParams.get('search') || '';
-      
-      // Method 2: Try path-based format (/products/search=query)
-      if (!search && location.includes('search=')) {
-        const pathMatch = location.match(/search=([^&/]+)/);
-        if (pathMatch && pathMatch[1]) {
-          search = decodeURIComponent(pathMatch[1]);
-        }
-      }
-      
-      console.log('🔍 Search extraction:', {
-        url: window.location.href,
-        location,
-        extractedQuery: search,
-        timestamp: new Date().toISOString()
-      });
-      
-      return search;
-    };
-
-    const newSearchQuery = extractSearchQuery();
-    setSearchQuery(newSearchQuery);
-    // Force component refresh to ensure UI updates
-    setRefreshKey(prev => prev + 1);
+    const next = getSearchQueryFromUrl(location);
+    setSearchQuery(next);
   }, [location]);
 
-  // Log filtered results for debugging
-  useEffect(() => {
-    console.log('📊 Current state:', {
-      searchQuery,
-      selectedCategory,
-      filteredCount: filteredProducts.length,
-      refreshKey
+  // Filter in a memo so results always recompute correctly when search/category changes
+  const filteredProducts = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+
+    return PRODUCTS.filter((product) => {
+      const matchesSearch = !q ||
+        product.name.toLowerCase().includes(q) ||
+        product.category.toLowerCase().includes(q);
+
+      const matchesCategory = !selectedCategory || product.category.toLowerCase() === selectedCategory;
+      return matchesSearch && matchesCategory;
     });
-  }, [searchQuery, selectedCategory, refreshKey]);
+  }, [searchQuery, selectedCategory]);
 
-  const filteredProducts = PRODUCTS.filter((product) => {
-    const matchesSearch = !searchQuery || 
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.category.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = !selectedCategory || product.category.toLowerCase() === selectedCategory;
-    return matchesSearch && matchesCategory;
-  });
-
-  const sortedProducts = [...filteredProducts].sort((a, b) => {
-    switch (sortBy) {
-      case 'price-low':
-        return a.price - b.price;
-      case 'price-high':
-        return b.price - a.price;
-      case 'rating':
-        return b.rating - a.rating;
-      case 'newest':
-        return b.id - a.id;
-      default:
-        return 0;
-    }
-  });
+  const sortedProducts = useMemo(() => {
+    return [...filteredProducts].sort((a, b) => {
+      switch (sortBy) {
+        case 'price-low':
+          return a.price - b.price;
+        case 'price-high':
+          return b.price - a.price;
+        case 'rating':
+          return b.rating - a.rating;
+        case 'newest':
+          return b.id - a.id;
+        default:
+          return 0;
+      }
+    });
+  }, [filteredProducts, sortBy]);
 
   return (
-    <div className="min-h-screen bg-background text-foreground" key={refreshKey}>
+    <div className="min-h-screen bg-background text-foreground">
       <NavigationHeader />
 
       <div className="container py-8">
         <div className="mb-8">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Products</h1>
           <p className="text-foreground/60">
-            {searchQuery ? (
-              <>
-                Search results for <span className="font-semibold text-accent">"{searchQuery}"</span> ({sortedProducts.length} found)
-              </>
-            ) : (
-              'Browse our collection of premium electronics'
-            )}
+            {searchQuery
+              ? `Search results for "${searchQuery}" (${sortedProducts.length} found)`
+              : 'Browse our collection of premium electronics'}
           </p>
         </div>
 
@@ -203,9 +191,7 @@ export default function Products() {
           <div className="lg:col-span-3 space-y-6">
             {/* Toolbar */}
             <div className="flex items-center justify-between gap-4 p-4 bg-card border border-border rounded-lg">
-              <span className="text-sm text-foreground/60">
-                Showing {sortedProducts.length} products
-              </span>
+              <span className="text-sm text-foreground/60">Showing {sortedProducts.length} products</span>
 
               <div className="flex items-center gap-4">
                 {/* Sort */}
@@ -279,34 +265,22 @@ export default function Products() {
                     </a>
 
                     <div className={viewMode === 'list' ? 'flex-1' : ''}>
-                      <div className="text-sm text-accent font-medium mb-2">
-                        {product.category}
-                      </div>
+                      <div className="text-sm text-accent font-medium mb-2">{product.category}</div>
                       <a href={`/product/${product.slug}`} className="hover:text-accent transition-colors">
-                        <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-2">
-                          {product.name}
-                        </h3>
+                        <h3 className="text-lg font-semibold text-foreground mb-2 line-clamp-2">{product.name}</h3>
                       </a>
 
                       <div className="flex items-center gap-2 mb-4">
-                        <span className="text-sm text-foreground/60">
-                          ★ {product.rating.toFixed(1)}
-                        </span>
-                        <span className="text-sm text-foreground/60">
-                          ({product.reviews} reviews)
-                        </span>
+                        <span className="text-sm text-foreground/60">★ {product.rating.toFixed(1)}</span>
+                        <span className="text-sm text-foreground/60">({product.reviews} reviews)</span>
                       </div>
 
                       <div className="flex items-center justify-between">
                         <div className="space-y-1">
-                          <div className="text-2xl font-bold text-accent">
-                            {formatPrice(product.price)}
-                          </div>
+                          <div className="text-2xl font-bold text-accent">{formatPrice(product.price)}</div>
                           {product.originalPrice > product.price && (
                             <div className="flex items-center gap-2">
-                              <div className="text-sm line-through text-foreground/50">
-                                {formatPrice(product.originalPrice)}
-                              </div>
+                              <div className="text-sm line-through text-foreground/50">{formatPrice(product.originalPrice)}</div>
                               <span className="text-xs font-semibold text-green-500 bg-green-500/10 px-2 py-0.5 rounded">
                                 {Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)}% OFF
                               </span>
@@ -314,9 +288,7 @@ export default function Products() {
                           )}
                         </div>
                         <a href={`/product/${product.slug}`}>
-                          <Button className="btn-primary py-2 px-4">
-                            {viewMode === 'list' ? 'View Details' : 'View'}
-                          </Button>
+                          <Button className="btn-primary py-2 px-4">{viewMode === 'list' ? 'View Details' : 'View'}</Button>
                         </a>
                       </div>
                     </div>
@@ -328,7 +300,7 @@ export default function Products() {
                 <Zap size={48} className="text-foreground/20 mx-auto" />
                 <p className="text-foreground/60">No products found matching your criteria</p>
                 {searchQuery && (
-                  <Button onClick={() => window.location.href = '/products'} className="btn-secondary">
+                  <Button onClick={() => (window.location.href = '/products')} className="btn-secondary">
                     Clear Search
                   </Button>
                 )}
