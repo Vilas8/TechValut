@@ -1,131 +1,148 @@
-import { TrendingUp, Users, ShoppingBag, DollarSign, BarChart3, PieChart } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import AdminLayout from "./AdminLayout";
-
-const topProducts = [
-  { name: "MacBook Pro 14\" M3", revenue: "₹18,99,900", units: 10, pct: 90 },
-  { name: "iPhone 15 Pro", revenue: "₹13,49,900", units: 10, pct: 75 },
-  { name: "Samsung S24 Ultra", revenue: "₹12,99,990", units: 10, pct: 68 },
-  { name: "iPad Pro M4", revenue: "₹10,99,000", units: 10, pct: 55 },
-  { name: "Sony WH-1000XM5", revenue: "₹2,99,900", units: 10, pct: 30 },
-];
-
-const categoryBreakdown = [
-  { category: "Laptops", pct: 34, color: "bg-primary" },
-  { category: "Smartphones", pct: 28, color: "bg-blue-500" },
-  { category: "Tablets", pct: 16, color: "bg-purple-500" },
-  { category: "Audio", pct: 12, color: "bg-orange-500" },
-  { category: "Wearables", pct: 10, color: "bg-pink-500" },
-];
-
-const months = ["Sep", "Oct", "Nov", "Dec", "Jan", "Feb"];
-const revenues = [180, 210, 245, 310, 280, 350];
-const maxRev = Math.max(...revenues);
+import AdminLayout from './AdminLayout';
+import { trpc } from '@/lib/trpc';
+import { RefreshCw, TrendingUp } from 'lucide-react';
 
 export default function AdminAnalytics() {
+  const { data, isLoading, refetch } = trpc.admin.analytics.useQuery();
+  const stats = trpc.admin.stats.useQuery();
+
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+
+  const monthlySales: any[] = data?.monthlySales ?? [];
+  const categoryStats: any[] = data?.categoryStats ?? [];
+  const topProducts: any[] = data?.topProducts ?? [];
+
+  const maxRevenue = Math.max(...monthlySales.map((m: any) => Number(m.revenue ?? 0)), 1);
+  const totalCategoryRevenue = categoryStats.reduce((acc: number, c: any) => acc + Number(c.revenue ?? 0), 0);
+
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Analytics</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Store performance insights</p>
+          <h1 className="text-2xl font-bold text-foreground">Analytics</h1>
+          <p className="text-sm text-muted-foreground mt-1">Store performance insights — live data</p>
         </div>
+        <button onClick={() => { refetch(); stats.refetch(); }} className="flex items-center gap-2 px-3 py-2 text-sm border border-border rounded-lg hover:bg-secondary transition-colors">
+          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} /> Refresh
+        </button>
+      </div>
 
-        {/* KPI cards */}
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {/* Summary Cards */}
+      {stats.data && (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Monthly Revenue", value: "₹24.9L", sub: "+12.5% vs last month", icon: DollarSign, color: "text-green-500", bg: "bg-green-500/10" },
-            { label: "Conversion Rate", value: "3.8%", sub: "+0.4% vs last month", icon: TrendingUp, color: "text-blue-500", bg: "bg-blue-500/10" },
-            { label: "Avg Order Value", value: "₹19,390", sub: "+6.2% vs last month", icon: ShoppingBag, color: "text-purple-500", bg: "bg-purple-500/10" },
-            { label: "Active Users", value: "3,921", sub: "+15.3% vs last month", icon: Users, color: "text-orange-500", bg: "bg-orange-500/10" },
-          ].map(({ label, value, sub, icon: Icon, color, bg }) => (
-            <Card key={label} className="border-border">
-              <CardContent className="pt-5 pb-4">
-                <div className={`${bg} w-8 h-8 rounded-lg flex items-center justify-center mb-3`}>
-                  <Icon className={`h-4 w-4 ${color}`} />
-                </div>
-                <p className="text-xl font-bold">{value}</p>
-                <p className="text-xs text-muted-foreground mt-0.5">{label}</p>
-                <p className="text-xs text-green-500 font-medium mt-1">{sub}</p>
-              </CardContent>
-            </Card>
+            { label: 'Monthly Revenue', value: formatCurrency(stats.data.totalRevenue) },
+            { label: 'Total Orders', value: stats.data.totalOrders.toLocaleString() },
+            { label: 'Avg Order Value', value: stats.data.totalOrders > 0 ? formatCurrency(Math.round(stats.data.totalRevenue / stats.data.totalOrders)) : '₹0' },
+            { label: 'Active Users', value: stats.data.totalUsers.toLocaleString() },
+          ].map((c) => (
+            <div key={c.label} className="bg-card border border-border rounded-xl p-5">
+              <p className="text-2xl font-bold text-foreground">{c.value}</p>
+              <p className="text-xs text-muted-foreground mt-1">{c.label}</p>
+            </div>
           ))}
         </div>
+      )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Revenue bar chart */}
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <BarChart3 className="h-4 w-4 text-primary" /> Monthly Revenue
-              </CardTitle>
-              <CardDescription>Last 6 months revenue in lakhs</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="flex items-end gap-3 h-40">
-                {months.map((m, i) => (
-                  <div key={m} className="flex-1 flex flex-col items-center gap-1">
-                    <span className="text-xs text-muted-foreground font-medium">₹{revenues[i]}K</span>
+      <div className="grid lg:grid-cols-2 gap-6 mb-6">
+        {/* Monthly Revenue Chart */}
+        <div className="bg-card border border-border rounded-xl p-6">
+          <div className="flex items-center gap-2 mb-1">
+            <TrendingUp size={18} className="text-primary" />
+            <h2 className="font-semibold text-foreground">Monthly Revenue</h2>
+          </div>
+          <p className="text-xs text-muted-foreground mb-5">Last 6 months revenue</p>
+          {isLoading ? (
+            <div className="h-48 flex items-end gap-2">
+              {[...Array(6)].map((_, i) => <div key={i} className="flex-1 bg-muted rounded-t animate-pulse" style={{ height: `${(i + 1) * 15}%` }} />)}
+            </div>
+          ) : monthlySales.length === 0 ? (
+            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">No revenue data yet</div>
+          ) : (
+            <div className="flex items-end gap-2 h-48">
+              {monthlySales.map((m: any, i: number) => {
+                const pct = (Number(m.revenue) / maxRevenue) * 100;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <p className="text-[10px] text-muted-foreground font-medium">{formatCurrency(Number(m.revenue))}</p>
                     <div
-                      className="w-full bg-primary/80 hover:bg-primary transition-colors rounded-t-md"
-                      style={{ height: `${(revenues[i] / maxRev) * 100}%` }}
+                      className="w-full rounded-t-md bg-primary/70 hover:bg-primary transition-colors"
+                      style={{ height: `${Math.max(pct, 4)}%` }}
+                      title={`${m.month}: ${formatCurrency(Number(m.revenue))}`}
                     />
-                    <span className="text-xs text-muted-foreground">{m}</span>
+                    <p className="text-[10px] text-muted-foreground">{m.month}</p>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-
-          {/* Category breakdown */}
-          <Card className="border-border">
-            <CardHeader>
-              <CardTitle className="text-base flex items-center gap-2">
-                <PieChart className="h-4 w-4 text-primary" /> Sales by Category
-              </CardTitle>
-              <CardDescription>Revenue distribution across categories</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {categoryBreakdown.map(({ category, pct, color }) => (
-                <div key={category}>
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="text-sm font-medium">{category}</span>
-                    <span className="text-sm text-muted-foreground">{pct}%</span>
-                  </div>
-                  <div className="h-2 bg-muted rounded-full overflow-hidden">
-                    <div className={`h-full ${color} rounded-full`} style={{ width: `${pct}%` }} />
-                  </div>
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+                );
+              })}
+            </div>
+          )}
         </div>
 
-        {/* Top products */}
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="text-base flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-primary" /> Top Selling Products
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {topProducts.map((p, i) => (
-              <div key={p.name}>
-                <div className="flex items-center justify-between mb-1">
-                  <div className="flex items-center gap-2">
-                    <Badge variant="outline" className="w-6 h-6 p-0 flex items-center justify-center text-xs font-bold">{i + 1}</Badge>
-                    <span className="text-sm font-medium">{p.name}</span>
+        {/* Sales by Category */}
+        <div className="bg-card border border-border rounded-xl p-6">
+          <h2 className="font-semibold text-foreground mb-1">Sales by Category</h2>
+          <p className="text-xs text-muted-foreground mb-5">Revenue distribution</p>
+          {isLoading ? (
+            <div className="space-y-4">{[...Array(5)].map((_, i) => <div key={i} className="h-8 bg-muted rounded animate-pulse" />)}</div>
+          ) : categoryStats.length === 0 ? (
+            <div className="h-48 flex items-center justify-center text-muted-foreground text-sm">No category data yet</div>
+          ) : (
+            <div className="space-y-4">
+              {categoryStats.map((c: any, i: number) => {
+                const pct = totalCategoryRevenue > 0 ? Math.round((Number(c.revenue) / totalCategoryRevenue) * 100) : 0;
+                const colors = ['bg-blue-500', 'bg-orange-500', 'bg-purple-500', 'bg-green-500', 'bg-pink-500'];
+                return (
+                  <div key={i}>
+                    <div className="flex justify-between text-sm mb-1.5">
+                      <span className="font-medium text-foreground">{c.category}</span>
+                      <span className="text-muted-foreground">{pct}%</span>
+                    </div>
+                    <div className="h-2 bg-muted rounded-full overflow-hidden">
+                      <div className={`h-full ${colors[i % colors.length]} rounded-full`} style={{ width: `${pct}%` }} />
+                    </div>
                   </div>
-                  <span className="text-sm font-bold text-primary">{p.revenue}</span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Top Selling Products */}
+      <div className="bg-card border border-border rounded-xl">
+        <div className="px-6 py-4 border-b border-border">
+          <h2 className="font-semibold text-foreground">Top Selling Products</h2>
+          <p className="text-xs text-muted-foreground mt-0.5">By total units sold</p>
+        </div>
+        {isLoading ? (
+          <div className="p-6 space-y-3">{[...Array(5)].map((_, i) => <div key={i} className="h-12 bg-muted rounded animate-pulse" />)}</div>
+        ) : topProducts.length === 0 ? (
+          <div className="p-10 text-center text-muted-foreground text-sm">No sales data yet</div>
+        ) : (
+          <div className="divide-y divide-border">
+            {topProducts.map((p: any, i: number) => (
+              <div key={i} className="px-6 py-4 flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-bold text-muted-foreground w-5">#{i + 1}</span>
+                  {p.image ? (
+                    <img src={p.image} alt={p.name} className="w-10 h-10 rounded-lg object-cover bg-muted" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-lg bg-muted" />
+                  )}
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{p.name}</p>
+                    <p className="text-xs text-muted-foreground">{p.totalSold} units sold</p>
+                  </div>
                 </div>
-                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary/70 rounded-full" style={{ width: `${p.pct}%` }} />
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-foreground">{formatCurrency(Number(p.totalRevenue))}</p>
+                  <p className="text-xs text-muted-foreground">revenue</p>
                 </div>
               </div>
             ))}
-          </CardContent>
-        </Card>
+          </div>
+        )}
       </div>
     </AdminLayout>
   );

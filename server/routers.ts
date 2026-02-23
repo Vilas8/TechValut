@@ -12,53 +12,37 @@ export const appRouter = router({
     logout: publicProcedure.mutation(({ ctx }) => {
       const cookieOptions = getSessionCookieOptions(ctx.req);
       ctx.res.clearCookie(COOKIE_NAME, { ...cookieOptions, maxAge: -1 });
-      return {
-        success: true,
-      } as const;
+      return { success: true } as const;
     }),
   }),
 
   products: router({
-    list: publicProcedure.query(async () => {
-      return db.getProducts(20);
-    }),
-    featured: publicProcedure.query(async () => {
-      return db.getFeaturedProducts(6);
-    }),
+    list: publicProcedure.query(async () => db.getProducts(20)),
+    featured: publicProcedure.query(async () => db.getFeaturedProducts(6)),
     byCategory: publicProcedure
       .input(z.object({ categoryId: z.number() }))
-      .query(async ({ input }) => {
-        return db.getProductsByCategory(input.categoryId, 20);
-      }),
+      .query(async ({ input }) => db.getProductsByCategory(input.categoryId, 20)),
     bySlug: publicProcedure
       .input(z.object({ slug: z.string() }))
-      .query(async ({ input }) => {
-        return db.getProductBySlug(input.slug);
-      }),
+      .query(async ({ input }) => db.getProductBySlug(input.slug)),
     search: publicProcedure
       .input(z.object({ query: z.string() }))
-      .query(async ({ input }) => {
-        return db.searchProducts(input.query, 20);
-      }),
+      .query(async ({ input }) => db.searchProducts(input.query, 20)),
   }),
 
   categories: router({
-    list: publicProcedure.query(async () => {
-      return db.getCategories();
-    }),
+    list: publicProcedure.query(async () => db.getCategories()),
   }),
 
   contact: router({
     submit: publicProcedure
       .input(z.object({
-        name: z.string().min(1, "Name is required"),
-        email: z.string().email("Invalid email"),
-        subject: z.string().min(1, "Subject is required"),
-        message: z.string().min(1, "Message is required"),
+        name: z.string().min(1),
+        email: z.string().email(),
+        subject: z.string().min(1),
+        message: z.string().min(1),
       }))
-      .mutation(async ({ input }) => {
-        return db.createContactSubmission(input);
-      }),
+      .mutation(async ({ input }) => db.createContactSubmission(input)),
   }),
 
   orders: router({
@@ -89,7 +73,6 @@ export const appRouter = router({
       }))
       .mutation(async ({ input, ctx }) => {
         const orderNumber = `TV-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
-        
         const orderResult = await db.createOrder({
           userId: ctx.user.id,
           orderNumber,
@@ -110,9 +93,7 @@ export const appRouter = router({
           paymentMethod: input.paymentMethod,
           paymentStatus: "completed",
         });
-
         const orderId = (orderResult as any).insertId;
-
         for (const item of input.items) {
           await db.createOrderItem({
             orderId,
@@ -124,15 +105,11 @@ export const appRouter = router({
             subtotal: Math.round(item.subtotal),
           });
         }
-
         return { orderId, orderNumber };
       }),
-    
-    list: protectedProcedure
-      .query(async ({ ctx }) => {
-        return db.getOrdersByUserId(ctx.user.id);
-      }),
-    
+
+    list: protectedProcedure.query(async ({ ctx }) => db.getOrdersByUserId(ctx.user.id)),
+
     getById: protectedProcedure
       .input(z.object({ orderId: z.number() }))
       .query(async ({ input, ctx }) => {
@@ -144,13 +121,10 @@ export const appRouter = router({
   }),
 
   user: router({
-    profile: protectedProcedure
-      .query(async ({ ctx }) => {
-        return db.getUserById(ctx.user.id);
-      }),
-    
+    profile: protectedProcedure.query(async ({ ctx }) => db.getUserById(ctx.user.id)),
     updateProfile: protectedProcedure
       .input(z.object({
+        name: z.string().optional(),
         phone: z.string().optional(),
         address: z.string().optional(),
         city: z.string().optional(),
@@ -158,9 +132,52 @@ export const appRouter = router({
         zipCode: z.string().optional(),
         country: z.string().optional(),
       }))
+      .mutation(async ({ input, ctx }) => db.updateUserProfile(ctx.user.id, input)),
+  }),
+
+  // ─── ADMIN ROUTES ────────────────────────────────────────────────────────────
+  admin: router({
+    stats: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+      return db.adminGetDashboardStats();
+    }),
+
+    recentOrders: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+      return db.adminGetRecentOrders(10);
+    }),
+
+    recentUsers: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+      return db.adminGetRecentUsers(10);
+    }),
+
+    allUsers: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+      return db.adminGetAllUsers();
+    }),
+
+    allOrders: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+      return db.adminGetAllOrders();
+    }),
+
+    updateOrderStatus: protectedProcedure
+      .input(z.object({ orderId: z.number(), status: z.enum(['pending','confirmed','shipped','delivered','cancelled']) }))
       .mutation(async ({ input, ctx }) => {
-        return db.updateUserProfile(ctx.user.id, input);
+        if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+        return db.adminUpdateOrderStatus(input.orderId, input.status);
       }),
+
+    analytics: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+      return db.adminGetAnalytics();
+    }),
+
+    allProducts: protectedProcedure.query(async ({ ctx }) => {
+      if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+      return db.adminGetAllProducts();
+    }),
   }),
 });
 

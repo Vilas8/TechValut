@@ -1,114 +1,124 @@
-import { Package, Truck, CheckCircle2, Clock, Search, Filter } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { useState } from "react";
-import DashboardLayout from "./DashboardLayout";
+import DashboardLayout from './DashboardLayout';
+import { trpc } from '@/lib/trpc';
+import { ShoppingBag, Search, RefreshCw, Package } from 'lucide-react';
+import { useState } from 'react';
 
-const orders = [
-  { id: "#TV-00123", product: "MacBook Pro 14\" M3 Pro", category: "Laptop", date: "Feb 20, 2025", status: "Delivered", amount: "₹1,89,990", qty: 1, image: null },
-  { id: "#TV-00119", product: "Sony WH-1000XM5", category: "Audio", date: "Feb 15, 2025", status: "Shipped", amount: "₹29,990", qty: 1, image: null },
-  { id: "#TV-00115", product: "iPhone 15 Pro 256GB", category: "Smartphone", date: "Feb 10, 2025", status: "Processing", amount: "₹1,34,990", qty: 1, image: null },
-  { id: "#TV-00110", product: "Apple Watch Ultra 2", category: "Wearable", date: "Jan 28, 2025", status: "Delivered", amount: "₹89,900", qty: 1, image: null },
-  { id: "#TV-00102", product: "iPad Pro M4 11\" WiFi", category: "Tablet", date: "Jan 15, 2025", status: "Delivered", amount: "₹1,09,900", qty: 1, image: null },
-  { id: "#TV-00098", product: "Samsung 27\" 4K Monitor", category: "Monitor", date: "Jan 05, 2025", status: "Cancelled", amount: "₹49,990", qty: 1, image: null },
-];
+const STATUS_FILTERS = ['All', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
 
-const statusConfig: Record<string, { icon: typeof Package; color: string; bg: string }> = {
-  Delivered: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-500/10" },
-  Shipped: { icon: Truck, color: "text-blue-600", bg: "bg-blue-500/10" },
-  Processing: { icon: Clock, color: "text-yellow-600", bg: "bg-yellow-500/10" },
-  Cancelled: { icon: Package, color: "text-red-600", bg: "bg-red-500/10" },
+const statusColor: Record<string, string> = {
+  delivered: 'text-green-700 bg-green-100',
+  shipped: 'text-blue-700 bg-blue-100',
+  confirmed: 'text-indigo-700 bg-indigo-100',
+  pending: 'text-yellow-700 bg-yellow-100',
+  cancelled: 'text-red-700 bg-red-100',
 };
 
 export default function Orders() {
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
-  const statuses = ["All", "Delivered", "Shipped", "Processing", "Cancelled"];
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All');
+  const { data: orders, isLoading, refetch } = trpc.orders.list.useQuery();
 
-  const filtered = orders.filter((o) => {
-    const matchSearch = o.product.toLowerCase().includes(search.toLowerCase()) || o.id.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === "All" || o.status === filterStatus;
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+
+  const filtered = (orders ?? []).filter((o) => {
+    const q = search.toLowerCase();
+    const matchSearch = o.orderNumber.toLowerCase().includes(q);
+    const matchStatus = statusFilter === 'All' || o.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
   return (
     <DashboardLayout>
-      <div className="space-y-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">My Orders</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Track and manage your purchases</p>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            <ShoppingBag className="text-primary" size={24} /> My Orders
+          </h1>
+          <p className="text-sm text-muted-foreground mt-1">{orders?.length ?? 0} total orders</p>
         </div>
+        <button onClick={() => refetch()} className="flex items-center gap-2 px-3 py-2 text-sm border border-border rounded-lg hover:bg-secondary transition-colors">
+          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} /> Refresh
+        </button>
+      </div>
 
-        {/* Summary cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-          {statuses.slice(1).map((s) => {
-            const count = orders.filter((o) => o.status === s).length;
-            const cfg = statusConfig[s];
-            return (
-              <Card key={s} className="border-border cursor-pointer hover:shadow-md transition-shadow" onClick={() => setFilterStatus(s === filterStatus ? "All" : s)}>
-                <CardContent className="pt-4 pb-4">
-                  <div className={`${cfg.bg} w-8 h-8 rounded-lg flex items-center justify-center mb-2`}>
-                    <cfg.icon className={`h-4 w-4 ${cfg.color}`} />
-                  </div>
-                  <p className="text-xl font-bold">{count}</p>
-                  <p className="text-xs text-muted-foreground">{s}</p>
-                </CardContent>
-              </Card>
-            );
-          })}
+      {/* Filters */}
+      <div className="bg-card border border-border rounded-xl mb-4">
+        <div className="p-4 flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <input
+              placeholder="Search by order number..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+            />
+          </div>
+          <div className="flex gap-1.5 flex-wrap">
+            {STATUS_FILTERS.map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-colors ${
+                  statusFilter === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground/70 hover:bg-muted'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
+      </div>
 
-        {/* Filters */}
-        <Card className="border-border">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search orders..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
+      {/* Orders List */}
+      {isLoading ? (
+        <div className="space-y-3">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="bg-card border border-border rounded-xl p-5 animate-pulse">
+              <div className="h-4 bg-muted rounded w-1/3 mb-2" />
+              <div className="h-3 bg-muted rounded w-1/2" />
+            </div>
+          ))}
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-card border border-border rounded-xl p-12 text-center">
+          <Package size={40} className="mx-auto text-muted-foreground mb-3" />
+          <p className="font-semibold text-foreground">No orders found</p>
+          <p className="text-sm text-muted-foreground mt-1">
+            {orders?.length === 0 ? "You haven't placed any orders yet." : 'Try changing your filters.'}
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {filtered.map((o) => (
+            <div key={o.id} className="bg-card border border-border rounded-xl p-5">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-sm font-bold text-foreground font-mono">{o.orderNumber}</p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Placed on {new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'long', year: 'numeric' })}
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Ship to: {o.shippingFirstName} {o.shippingLastName}, {o.shippingCity}, {o.shippingState}
+                  </p>
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-base font-bold text-foreground">{formatCurrency(o.total)}</p>
+                  <span className={`inline-block mt-1 text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColor[o.status] ?? 'bg-muted text-muted-foreground'}`}>
+                    {o.status}
+                  </span>
+                </div>
               </div>
-              <div className="flex gap-2 flex-wrap">
-                {statuses.map((s) => (
-                  <Button key={s} variant={filterStatus === s ? "default" : "outline"} size="sm" onClick={() => setFilterStatus(s)} className="text-xs">{s}</Button>
-                ))}
+              <div className="mt-3 pt-3 border-t border-border flex gap-4 text-xs text-muted-foreground">
+                <span>Subtotal: {formatCurrency(o.subtotal)}</span>
+                <span>Tax: {formatCurrency(o.tax)}</span>
+                <span>Shipping: {o.shipping === 0 ? 'Free' : formatCurrency(o.shipping)}</span>
+                <span>Payment: {o.paymentMethod}</span>
               </div>
             </div>
-          </CardHeader>
-          <CardContent className="space-y-3">
-            {filtered.length === 0 ? (
-              <div className="text-center py-10">
-                <Package className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-muted-foreground">No orders found</p>
-              </div>
-            ) : (
-              filtered.map((order) => {
-                const cfg = statusConfig[order.status];
-                return (
-                  <div key={order.id} className="flex items-center justify-between p-4 border border-border rounded-xl hover:bg-muted/30 transition-colors">
-                    <div className="flex items-center gap-4">
-                      <div className="bg-muted rounded-xl p-3 shrink-0">
-                        <Package className="h-5 w-5 text-muted-foreground" />
-                      </div>
-                      <div>
-                        <p className="font-semibold text-sm">{order.product}</p>
-                        <p className="text-xs text-muted-foreground">{order.id} · {order.date} · {order.category}</p>
-                      </div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="font-bold text-sm">{order.amount}</p>
-                      <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${cfg.bg} mt-1`}>
-                        <cfg.icon className={`h-3 w-3 ${cfg.color}`} />
-                        <span className={`text-xs font-medium ${cfg.color}`}>{order.status}</span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          ))}
+        </div>
+      )}
     </DashboardLayout>
   );
 }

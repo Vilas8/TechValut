@@ -1,121 +1,145 @@
-import { ShoppingBag, Search, MoreVertical, CheckCircle2, Truck, Clock, XCircle } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { useState } from "react";
-import { toast } from "sonner";
-import AdminLayout from "./AdminLayout";
+import AdminLayout from './AdminLayout';
+import { trpc } from '@/lib/trpc';
+import { Search, RefreshCw, MoreVertical } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 
-const orders = [
-  { id: "#TV-01284", user: "Priya Sharma", product: "MacBook Pro 14\" M3 Pro", amount: "₹1,89,990", status: "Delivered", date: "Feb 22, 2025" },
-  { id: "#TV-01283", user: "Rahul Verma", product: "iPhone 15 Pro 256GB", amount: "₹1,34,990", status: "Shipped", date: "Feb 21, 2025" },
-  { id: "#TV-01282", user: "Aarti Patel", product: "Sony WH-1000XM5", amount: "₹29,990", status: "Processing", date: "Feb 20, 2025" },
-  { id: "#TV-01281", user: "Kiran Kumar", product: "iPad Pro M4 11\" WiFi", amount: "₹1,09,900", status: "Delivered", date: "Feb 19, 2025" },
-  { id: "#TV-01280", user: "Deepak Singh", product: "Apple Watch Ultra 2", amount: "₹89,900", status: "Cancelled", date: "Feb 18, 2025" },
-  { id: "#TV-01279", user: "Neha Gupta", product: "Samsung Galaxy S24 Ultra", amount: "₹1,29,999", status: "Shipped", date: "Feb 17, 2025" },
-  { id: "#TV-01278", user: "Arjun Nair", product: "Dell XPS 15 OLED", amount: "₹1,89,990", status: "Delivered", date: "Feb 16, 2025" },
-];
+const STATUS_FILTERS = ['All', 'pending', 'confirmed', 'shipped', 'delivered', 'cancelled'] as const;
 
-const statusConfig: Record<string, { icon: typeof CheckCircle2; color: string; bg: string }> = {
-  Delivered: { icon: CheckCircle2, color: "text-green-600", bg: "bg-green-500/10" },
-  Shipped: { icon: Truck, color: "text-blue-600", bg: "bg-blue-500/10" },
-  Processing: { icon: Clock, color: "text-yellow-600", bg: "bg-yellow-500/10" },
-  Cancelled: { icon: XCircle, color: "text-red-600", bg: "bg-red-500/10" },
+const statusColor: Record<string, string> = {
+  delivered: 'text-green-700 bg-green-100',
+  shipped: 'text-blue-700 bg-blue-100',
+  confirmed: 'text-indigo-700 bg-indigo-100',
+  pending: 'text-yellow-700 bg-yellow-100',
+  cancelled: 'text-red-700 bg-red-100',
 };
 
 export default function AdminOrders() {
-  const [search, setSearch] = useState("");
-  const [filterStatus, setFilterStatus] = useState("All");
-  const statuses = ["All", "Delivered", "Shipped", "Processing", "Cancelled"];
+  const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string>('All');
+  const [openMenu, setOpenMenu] = useState<number | null>(null);
 
-  const filtered = orders.filter((o) => {
-    const matchSearch = o.user.toLowerCase().includes(search.toLowerCase()) || o.id.toLowerCase().includes(search.toLowerCase()) || o.product.toLowerCase().includes(search.toLowerCase());
-    const matchStatus = filterStatus === "All" || o.status === filterStatus;
+  const { data: orders, isLoading, refetch } = trpc.admin.allOrders.useQuery();
+  const updateStatus = trpc.admin.updateOrderStatus.useMutation({
+    onSuccess: () => { toast.success('Order status updated'); refetch(); setOpenMenu(null); },
+    onError: () => toast.error('Failed to update status'),
+  });
+
+  const filtered = (orders ?? []).filter((o) => {
+    const q = search.toLowerCase();
+    const matchSearch =
+      o.orderNumber.toLowerCase().includes(q) ||
+      (o.userName ?? '').toLowerCase().includes(q) ||
+      (o.userEmail ?? '').toLowerCase().includes(q) ||
+      `${o.shippingFirstName} ${o.shippingLastName}`.toLowerCase().includes(q);
+    const matchStatus = statusFilter === 'All' || o.status === statusFilter;
     return matchSearch && matchStatus;
   });
 
+  const formatCurrency = (val: number) =>
+    new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(val);
+
   return (
     <AdminLayout>
-      <div className="space-y-6">
+      <div className="flex items-center justify-between mb-6">
         <div>
-          <h1 className="text-2xl font-bold">Orders Management</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">{orders.length} total orders</p>
+          <h1 className="text-2xl font-bold text-foreground">Orders Management</h1>
+          <p className="text-sm text-muted-foreground mt-1">{filtered.length} of {orders?.length ?? 0} orders</p>
+        </div>
+        <button onClick={() => refetch()} className="flex items-center gap-2 px-3 py-2 text-sm border border-border rounded-lg hover:bg-secondary transition-colors">
+          <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} /> Refresh
+        </button>
+      </div>
+
+      <div className="bg-card border border-border rounded-xl">
+        {/* Filters */}
+        <div className="p-4 border-b border-border flex flex-col sm:flex-row gap-3">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground" size={16} />
+            <input
+              type="text"
+              placeholder="Search orders, customers..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="w-full pl-9 pr-4 py-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary"
+            />
+          </div>
+          <div className="flex gap-1.5 flex-wrap">
+            {STATUS_FILTERS.map((s) => (
+              <button
+                key={s}
+                onClick={() => setStatusFilter(s)}
+                className={`px-3 py-1.5 text-xs font-semibold rounded-lg capitalize transition-colors ${
+                  statusFilter === s ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground/70 hover:bg-muted'
+                }`}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
         </div>
 
-        <Card className="border-border">
-          <CardHeader className="pb-3">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search orders, users, products..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
-              </div>
-              <div className="flex gap-2 flex-wrap">
-                {statuses.map((s) => (
-                  <Button key={s} variant={filterStatus === s ? "default" : "outline"} size="sm" onClick={() => setFilterStatus(s)} className="text-xs">{s}</Button>
+        {/* Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-border">
+                {['Order ID', 'Customer', 'Date', 'Amount', 'Status', 'Actions'].map(h => (
+                  <th key={h} className="text-left text-xs font-semibold text-muted-foreground uppercase tracking-wide px-5 py-3">{h}</th>
                 ))}
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-border text-muted-foreground text-left">
-                    <th className="pb-3 font-medium">Order ID</th>
-                    <th className="pb-3 font-medium">Customer</th>
-                    <th className="pb-3 font-medium">Product</th>
-                    <th className="pb-3 font-medium">Amount</th>
-                    <th className="pb-3 font-medium">Date</th>
-                    <th className="pb-3 font-medium">Status</th>
-                    <th className="pb-3 font-medium w-10"></th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-border">
+              {isLoading ? (
+                [...Array(6)].map((_, i) => (
+                  <tr key={i}>{[...Array(6)].map((_, j) => <td key={j} className="px-5 py-4"><div className="h-4 bg-muted rounded animate-pulse" /></td>)}</tr>
+                ))
+              ) : filtered.length === 0 ? (
+                <tr><td colSpan={6} className="px-5 py-10 text-center text-muted-foreground">No orders found</td></tr>
+              ) : (
+                filtered.map((o) => (
+                  <tr key={o.id} className="hover:bg-muted/30 transition-colors relative">
+                    <td className="px-5 py-4 text-sm font-mono font-medium text-primary">{o.orderNumber}</td>
+                    <td className="px-5 py-4">
+                      <p className="text-sm font-medium text-foreground">{o.userName ?? `${o.shippingFirstName} ${o.shippingLastName}`}</p>
+                      <p className="text-xs text-muted-foreground">{o.userEmail ?? o.shippingEmail}</p>
+                    </td>
+                    <td className="px-5 py-4 text-sm text-muted-foreground">
+                      {new Date(o.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </td>
+                    <td className="px-5 py-4 text-sm font-semibold text-foreground">{formatCurrency(o.total)}</td>
+                    <td className="px-5 py-4">
+                      <span className={`text-xs font-semibold px-2.5 py-1 rounded-full capitalize ${statusColor[o.status] ?? 'bg-muted text-muted-foreground'}`}>
+                        {o.status}
+                      </span>
+                    </td>
+                    <td className="px-5 py-4 relative">
+                      <button onClick={() => setOpenMenu(openMenu === o.id ? null : o.id)} className="p-1.5 hover:bg-muted rounded-lg transition-colors">
+                        <MoreVertical size={16} className="text-muted-foreground" />
+                      </button>
+                      {openMenu === o.id && (
+                        <div className="absolute right-4 top-12 z-20 w-44 bg-card border border-border rounded-xl shadow-xl overflow-hidden">
+                          {(['pending','confirmed','shipped','delivered','cancelled'] as const).map((s) => (
+                            <button
+                              key={s}
+                              disabled={o.status === s}
+                              onClick={() => updateStatus.mutate({ orderId: o.id, status: s })}
+                              className={`w-full text-left px-4 py-2.5 text-sm capitalize transition-colors ${
+                                o.status === s ? 'text-muted-foreground cursor-default' : 'text-foreground hover:bg-muted'
+                              }`}
+                            >
+                              {o.status === s ? `✓ ${s}` : `Mark ${s}`}
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-border">
-                  {filtered.map((o) => {
-                    const cfg = statusConfig[o.status];
-                    return (
-                      <tr key={o.id} className="hover:bg-muted/30 transition-colors">
-                        <td className="py-3 pr-4 font-mono text-xs">{o.id}</td>
-                        <td className="py-3 pr-4 font-medium">{o.user}</td>
-                        <td className="py-3 pr-4 text-muted-foreground max-w-[180px] truncate">{o.product}</td>
-                        <td className="py-3 pr-4 font-bold">{o.amount}</td>
-                        <td className="py-3 pr-4 text-muted-foreground">{o.date}</td>
-                        <td className="py-3 pr-4">
-                          <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${cfg.bg}`}>
-                            <cfg.icon className={`h-3 w-3 ${cfg.color}`} />
-                            <span className={`text-xs font-medium ${cfg.color}`}>{o.status}</span>
-                          </div>
-                        </td>
-                        <td className="py-3">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="h-7 w-7">
-                                <MoreVertical className="h-4 w-4" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem onClick={() => toast.success(`${o.id} marked as Shipped`)} className="gap-2">
-                                <Truck className="h-4 w-4" /> Mark Shipped
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast.success(`${o.id} marked as Delivered`)} className="gap-2">
-                                <CheckCircle2 className="h-4 w-4" /> Mark Delivered
-                              </DropdownMenuItem>
-                              <DropdownMenuItem onClick={() => toast.error(`${o.id} cancelled`)} className="gap-2 text-destructive">
-                                <XCircle className="h-4 w-4" /> Cancel Order
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
     </AdminLayout>
   );

@@ -1,122 +1,110 @@
-import { useState } from "react";
-import { useAuth } from "@/contexts/AuthContext";
-import { User, Mail, Phone, MapPin, Edit3, Save, X, Camera } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { toast } from "sonner";
-import DashboardLayout from "./DashboardLayout";
+import DashboardLayout from './DashboardLayout';
+import { trpc } from '@/lib/trpc';
+import { useAuth } from '@/contexts/AuthContext';
+import { useState, useEffect } from 'react';
+import { User, Save, RefreshCw } from 'lucide-react';
+import { toast } from 'sonner';
 
 export default function Profile() {
-  const { user, updateProfile } = useAuth();
-  const [editing, setEditing] = useState(false);
-  const [form, setForm] = useState({
-    name: user?.name || "",
-    email: user?.email || "",
-    phone: user?.phone || "",
-    address: user?.address || "",
+  const { user } = useAuth();
+  const { data: profile, isLoading, refetch } = trpc.user.profile.useQuery();
+  const updateProfile = trpc.user.updateProfile.useMutation({
+    onSuccess: () => { toast.success('Profile updated successfully!'); refetch(); },
+    onError: () => toast.error('Failed to update profile'),
   });
 
-  const handleSave = () => {
-    updateProfile({ name: form.name, phone: form.phone, address: form.address });
-    setEditing(false);
-    toast.success("Profile updated successfully!");
+  const [form, setForm] = useState({
+    name: '', phone: '', address: '', city: '', state: '', zipCode: '', country: '',
+  });
+
+  useEffect(() => {
+    if (profile) {
+      setForm({
+        name: profile.name ?? '',
+        phone: profile.phone ?? '',
+        address: profile.address ?? '',
+        city: profile.city ?? '',
+        state: profile.state ?? '',
+        zipCode: profile.zipCode ?? '',
+        country: profile.country ?? '',
+      });
+    }
+  }, [profile]);
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    updateProfile.mutate(form);
   };
 
-  const handleCancel = () => {
-    setForm({ name: user?.name || "", email: user?.email || "", phone: user?.phone || "", address: user?.address || "" });
-    setEditing(false);
-  };
+  const fields = [
+    { key: 'name', label: 'Full Name', placeholder: 'Your full name', span: 'col-span-2' },
+    { key: 'phone', label: 'Phone Number', placeholder: '+91 98765 43210', span: '' },
+    { key: 'address', label: 'Address', placeholder: 'Street address', span: 'col-span-2' },
+    { key: 'city', label: 'City', placeholder: 'City', span: '' },
+    { key: 'state', label: 'State', placeholder: 'State', span: '' },
+    { key: 'zipCode', label: 'ZIP Code', placeholder: '560001', span: '' },
+    { key: 'country', label: 'Country', placeholder: 'India', span: '' },
+  ] as const;
 
   return (
     <DashboardLayout>
-      <div className="space-y-6 max-w-3xl">
-        <div>
-          <h1 className="text-2xl font-bold">My Profile</h1>
-          <p className="text-muted-foreground text-sm mt-0.5">Manage your personal information</p>
+      <div className="max-w-2xl">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-foreground flex items-center gap-2"><User className="text-primary" size={24} /> My Profile</h1>
+            <p className="text-sm text-muted-foreground mt-1">Manage your personal information</p>
+          </div>
+          <button onClick={() => refetch()} className="flex items-center gap-2 px-3 py-2 text-sm border border-border rounded-lg hover:bg-secondary transition-colors">
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} /> Refresh
+          </button>
         </div>
 
-        {/* Avatar card */}
-        <Card className="border-border">
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-5">
-              <div className="relative">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/30 to-primary/60 flex items-center justify-center text-3xl font-bold text-primary">
-                  {user?.name?.charAt(0).toUpperCase()}
-                </div>
-                <button className="absolute -bottom-1 -right-1 bg-primary rounded-full p-1.5 text-white shadow">
-                  <Camera className="h-3 w-3" />
-                </button>
-              </div>
-              <div className="flex-1">
-                <h2 className="text-xl font-bold">{user?.name}</h2>
-                <p className="text-muted-foreground text-sm">{user?.email}</p>
-                <div className="flex items-center gap-2 mt-2">
-                  <Badge variant="secondary" className="capitalize text-xs">{user?.role}</Badge>
-                  <span className="text-xs text-muted-foreground">Member since {user?.joinedAt}</span>
-                </div>
-              </div>
-              {!editing && (
-                <Button variant="outline" size="sm" className="gap-2" onClick={() => setEditing(true)}>
-                  <Edit3 className="h-4 w-4" /> Edit Profile
-                </Button>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+        {/* Avatar Card */}
+        <div className="bg-card border border-border rounded-xl p-6 mb-5 flex items-center gap-5">
+          <div className="w-20 h-20 rounded-full bg-primary/15 flex items-center justify-center text-primary font-bold text-2xl">
+            {(user?.name ?? user?.email ?? 'U')[0].toUpperCase()}
+          </div>
+          <div>
+            <p className="text-lg font-bold text-foreground">{profile?.name ?? user?.name ?? 'User'}</p>
+            <p className="text-sm text-muted-foreground">{profile?.email ?? user?.email}</p>
+            <p className="text-xs text-muted-foreground mt-1">
+              Member since {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('en-IN', { month: 'long', year: 'numeric' }) : '—'}
+            </p>
+          </div>
+        </div>
 
-        {/* Info form */}
-        <Card className="border-border">
-          <CardHeader>
-            <CardTitle className="text-base">Personal Information</CardTitle>
-            <CardDescription>Update your personal details below</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-2">
-                <Label>Full Name</Label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input className="pl-9" value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} disabled={!editing} />
+        {/* Form */}
+        <form onSubmit={handleSubmit} className="bg-card border border-border rounded-xl p-6">
+          <h2 className="font-semibold text-foreground mb-5">Edit Information</h2>
+          {isLoading ? (
+            <div className="grid grid-cols-2 gap-4">{[...Array(6)].map((_, i) => <div key={i} className="h-12 bg-muted rounded-lg animate-pulse" />)}</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-4">
+              {fields.map(({ key, label, placeholder, span }) => (
+                <div key={key} className={span}>
+                  <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5 block">{label}</label>
+                  <input
+                    type="text"
+                    placeholder={placeholder}
+                    value={form[key]}
+                    onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
+                    className="w-full px-3.5 py-2.5 bg-background border border-border rounded-lg text-sm focus:outline-none focus:border-primary transition-colors"
+                  />
                 </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Email Address</Label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input className="pl-9" value={form.email} disabled type="email" />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Phone Number</Label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input className="pl-9" placeholder="+91 98765 43210" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} disabled={!editing} />
-                </div>
-              </div>
-              <div className="space-y-2">
-                <Label>Address</Label>
-                <div className="relative">
-                  <MapPin className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                  <Input className="pl-9" placeholder="Your address" value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })} disabled={!editing} />
-                </div>
-              </div>
+              ))}
             </div>
-
-            {editing && (
-              <div className="flex gap-3 pt-2">
-                <Button onClick={handleSave} className="gap-2">
-                  <Save className="h-4 w-4" /> Save Changes
-                </Button>
-                <Button variant="outline" onClick={handleCancel} className="gap-2">
-                  <X className="h-4 w-4" /> Cancel
-                </Button>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+          )}
+          <div className="mt-5 flex justify-end">
+            <button
+              type="submit"
+              disabled={updateProfile.isPending || isLoading}
+              className="flex items-center gap-2 px-6 py-2.5 bg-primary text-primary-foreground text-sm font-semibold rounded-lg hover:bg-primary/90 disabled:opacity-60 transition-colors"
+            >
+              {updateProfile.isPending ? <RefreshCw size={15} className="animate-spin" /> : <Save size={15} />}
+              {updateProfile.isPending ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        </form>
       </div>
     </DashboardLayout>
   );
