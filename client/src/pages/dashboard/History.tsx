@@ -1,92 +1,161 @@
-import { Clock, Eye, Search, Calendar, ArrowUpDown } from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { useState } from "react";
-import DashboardLayout from "./DashboardLayout";
+import { trpc } from "@/utils/trpc";
+import { useAuth } from "@/hooks/useAuth";
+import { Link } from "wouter";
+import { Clock, Trash2, ExternalLink, BarChart2, PackageSearch } from "lucide-react";
+import { toast } from "sonner";
 
-const history = [
-  { id: 1, name: "MacBook Pro 14\" M3 Pro", category: "Laptop", price: "₹1,89,990", viewedAt: "Today, 2:34 PM", views: 3 },
-  { id: 2, name: "Sony WH-1000XM5 Headphones", category: "Audio", price: "₹29,990", viewedAt: "Today, 11:20 AM", views: 1 },
-  { id: 3, name: "iPhone 15 Pro Max 256GB", category: "Smartphone", price: "₹1,59,990", viewedAt: "Yesterday, 6:45 PM", views: 5 },
-  { id: 4, name: "Samsung Galaxy Tab S9 Ultra", category: "Tablet", price: "₹1,08,999", viewedAt: "Yesterday, 3:12 PM", views: 2 },
-  { id: 5, name: "Apple Watch Ultra 2", category: "Wearable", price: "₹89,900", viewedAt: "Feb 21, 2025", views: 2 },
-  { id: 6, name: "Logitech MX Master 3S", category: "Accessory", price: "₹9,495", viewedAt: "Feb 21, 2025", views: 1 },
-  { id: 7, name: "LG UltraGear 27\" 4K 144Hz", category: "Monitor", price: "₹79,990", viewedAt: "Feb 20, 2025", views: 4 },
-  { id: 8, name: "AirPods Pro 2nd Gen", category: "Audio", price: "₹24,900", viewedAt: "Feb 20, 2025", views: 2 },
-];
+function timeAgo(date: Date | string): string {
+  const now = new Date();
+  const past = new Date(date);
+  const diffMs = now.getTime() - past.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return past.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" });
+}
 
 export default function History() {
-  const [search, setSearch] = useState("");
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
 
-  const filtered = history.filter((h) => h.name.toLowerCase().includes(search.toLowerCase()) || h.category.toLowerCase().includes(search.toLowerCase()));
+  const { data: history, isLoading, error } = trpc.user.history.useQuery(undefined, {
+    enabled: !!user,
+  });
+
+  const clearMutation = trpc.user.clearHistory.useMutation({
+    onSuccess: () => {
+      utils.user.history.invalidate();
+      toast.success("Browsing history cleared");
+    },
+    onError: () => toast.error("Failed to clear history"),
+  });
+
+  const formatPrice = (p: number) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(p);
+
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Clock className="w-12 h-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Sign in to view your history</h2>
+        <p className="text-muted-foreground mb-4">Your browsing history will appear here.</p>
+        <Link href="/login" className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:opacity-90 transition">
+          Sign In
+        </Link>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-3">
+            <Clock className="w-6 h-6 text-primary" />
+            <h1 className="text-2xl font-bold">Browsing History</h1>
+          </div>
+        </div>
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="animate-pulse bg-muted rounded-xl h-24" />
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Clock className="w-12 h-12 text-destructive mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Failed to load history</h2>
+        <p className="text-muted-foreground">Please try refreshing the page.</p>
+      </div>
+    );
+  }
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">Browsing History</h1>
-            <p className="text-muted-foreground text-sm mt-0.5">Products you recently viewed</p>
-          </div>
-          <Button variant="outline" size="sm" className="gap-2 text-destructive hover:text-destructive">
-            Clear All History
-          </Button>
+    <div>
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <Clock className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold">Browsing History</h1>
+          {history && history.length > 0 && (
+            <span className="text-sm text-muted-foreground">{history.length} item{history.length !== 1 ? 's' : ''}</span>
+          )}
         </div>
-
-        <Card className="border-border">
-          <CardHeader className="pb-3">
-            <div className="flex gap-3">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search history..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
-              </div>
-              <Button variant="outline" size="sm" className="gap-2 shrink-0">
-                <ArrowUpDown className="h-4 w-4" /> Sort
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            {filtered.length === 0 ? (
-              <div className="text-center py-10">
-                <Clock className="h-10 w-10 text-muted-foreground/30 mx-auto mb-3" />
-                <p className="text-muted-foreground">No history found</p>
-              </div>
-            ) : (
-              filtered.map((item) => (
-                <div key={item.id} className="flex items-center justify-between p-3 rounded-xl border border-border hover:bg-muted/30 transition-colors group">
-                  <div className="flex items-center gap-4">
-                    <div className="bg-muted rounded-xl p-3 shrink-0">
-                      <Clock className="h-4 w-4 text-muted-foreground" />
-                    </div>
-                    <div>
-                      <p className="font-medium text-sm">{item.name}</p>
-                      <div className="flex items-center gap-2 mt-0.5">
-                        <Badge variant="secondary" className="text-xs">{item.category}</Badge>
-                        <span className="text-xs text-muted-foreground flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />{item.viewedAt}
-                        </span>
-                        {item.views > 1 && (
-                          <span className="text-xs text-muted-foreground flex items-center gap-1">
-                            <Eye className="h-3 w-3" />Viewed {item.views}x
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                  <div className="text-right shrink-0">
-                    <p className="font-bold text-sm">{item.price}</p>
-                    <Button variant="ghost" size="sm" className="text-xs mt-0.5 h-auto py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      View Again
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </CardContent>
-        </Card>
+        {history && history.length > 0 && (
+          <button
+            onClick={() => {
+              if (confirm("Clear all browsing history?")) {
+                clearMutation.mutate();
+              }
+            }}
+            disabled={clearMutation.isPending}
+            className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-destructive transition border border-border hover:border-destructive px-3 py-1.5 rounded-lg disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            Clear All
+          </button>
+        )}
       </div>
-    </DashboardLayout>
+
+      {!history || history.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl">
+          <PackageSearch className="w-14 h-14 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold mb-2">No browsing history yet</h2>
+          <p className="text-muted-foreground mb-6">Products you view will appear here automatically.</p>
+          <Link href="/products" className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg hover:opacity-90 transition font-medium">
+            Explore Products
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-3">
+          {history.map((item) => (
+            <div key={item.id} className="flex items-center gap-4 bg-card border border-border rounded-xl p-4 hover:shadow-md transition-shadow">
+              <Link href={`/product/${item.slug}`}>
+                <img
+                  src={item.image ?? "/placeholder.png"}
+                  alt={item.name}
+                  className="w-16 h-16 object-cover rounded-lg flex-shrink-0 hover:opacity-90 transition"
+                />
+              </Link>
+              <div className="flex-1 min-w-0">
+                <Link href={`/product/${item.slug}`} className="font-semibold text-foreground hover:text-primary transition line-clamp-1">
+                  {item.name}
+                </Link>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-base font-bold text-primary">{formatPrice(item.price)}</span>
+                  {item.originalPrice && item.originalPrice > item.price && (
+                    <span className="text-sm text-muted-foreground line-through">{formatPrice(item.originalPrice)}</span>
+                  )}
+                </div>
+                <div className="flex items-center gap-3 mt-1">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="w-3 h-3" />
+                    {timeAgo(item.viewedAt)}
+                  </span>
+                  {item.viewCount > 1 && (
+                    <span className="text-xs text-muted-foreground flex items-center gap-1">
+                      <BarChart2 className="w-3 h-3" />
+                      Viewed {item.viewCount}x
+                    </span>
+                  )}
+                </div>
+              </div>
+              <Link
+                href={`/product/${item.slug}`}
+                className="flex items-center gap-1.5 border border-border px-3 py-1.5 rounded-lg text-sm hover:bg-muted transition flex-shrink-0"
+              >
+                <ExternalLink className="w-3.5 h-3.5" />
+                View
+              </Link>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

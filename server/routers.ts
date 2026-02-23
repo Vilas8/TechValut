@@ -133,6 +133,33 @@ export const appRouter = router({
         country: z.string().optional(),
       }))
       .mutation(async ({ input, ctx }) => db.updateUserProfile(ctx.user.id, input)),
+
+    // ─── WISHLIST ──────────────────────────────────────────────────────────────
+    wishlist: protectedProcedure
+      .query(async ({ ctx }) => db.getWishlistByUser(ctx.user.id)),
+
+    isInWishlist: protectedProcedure
+      .input(z.object({ productId: z.number() }))
+      .query(async ({ input, ctx }) => db.isInWishlist(ctx.user.id, input.productId)),
+
+    addToWishlist: protectedProcedure
+      .input(z.object({ productId: z.number() }))
+      .mutation(async ({ input, ctx }) => db.addWishlistItem(ctx.user.id, input.productId)),
+
+    removeFromWishlist: protectedProcedure
+      .input(z.object({ productId: z.number() }))
+      .mutation(async ({ input, ctx }) => db.removeWishlistItem(ctx.user.id, input.productId)),
+
+    // ─── BROWSING HISTORY ──────────────────────────────────────────────────────
+    history: protectedProcedure
+      .query(async ({ ctx }) => db.getHistoryByUser(ctx.user.id, 50)),
+
+    trackView: protectedProcedure
+      .input(z.object({ productId: z.number() }))
+      .mutation(async ({ input, ctx }) => db.trackProductView(ctx.user.id, input.productId)),
+
+    clearHistory: protectedProcedure
+      .mutation(async ({ ctx }) => db.clearHistory(ctx.user.id)),
   }),
 
   // ─── ADMIN ROUTES ────────────────────────────────────────────────────────────
@@ -141,39 +168,32 @@ export const appRouter = router({
       if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
       return db.adminGetDashboardStats();
     }),
-
     recentOrders: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
       return db.adminGetRecentOrders(10);
     }),
-
     recentUsers: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
       return db.adminGetRecentUsers(10);
     }),
-
     allUsers: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
       return db.adminGetAllUsers();
     }),
-
     allOrders: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
       return db.adminGetAllOrders();
     }),
-
     updateOrderStatus: protectedProcedure
       .input(z.object({ orderId: z.number(), status: z.enum(['pending','confirmed','shipped','delivered','cancelled']) }))
       .mutation(async ({ input, ctx }) => {
         if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
         return db.adminUpdateOrderStatus(input.orderId, input.status);
       }),
-
     analytics: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
       return db.adminGetAnalytics();
     }),
-
     allProducts: protectedProcedure.query(async ({ ctx }) => {
       if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
       return db.adminGetAllProducts();

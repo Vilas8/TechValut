@@ -6,18 +6,12 @@ import { int, mysqlEnum, mysqlTable, text, timestamp, varchar } from "drizzle-or
  * Columns use camelCase to match both database fields and generated types.
  */
 export const users = mysqlTable("users", {
-  /**
-   * Surrogate primary key. Auto-incremented numeric value managed by the database.
-   * Use this for relations between tables.
-   */
   id: int("id").autoincrement().primaryKey(),
-  /** Manus OAuth identifier (openId) returned from the OAuth callback. Unique per user. */
   openId: varchar("openId", { length: 64 }).notNull().unique(),
   name: text("name"),
   email: varchar("email", { length: 320 }),
   loginMethod: varchar("loginMethod", { length: 64 }),
   role: mysqlEnum("role", ["user", "admin"]).default("user").notNull(),
-  // User profile fields
   phone: varchar("phone", { length: 20 }),
   address: text("address"),
   city: varchar("city", { length: 100 }),
@@ -50,15 +44,15 @@ export const products = mysqlTable("products", {
   name: varchar("name", { length: 255 }).notNull(),
   slug: varchar("slug", { length: 255 }).notNull().unique(),
   description: text("description"),
-  price: int("price").notNull(), // Store as cents
-  originalPrice: int("originalPrice"), // For discounts
+  price: int("price").notNull(),
+  originalPrice: int("originalPrice"),
   image: varchar("image", { length: 500 }),
-  images: text("images"), // JSON array of image URLs
-  specifications: text("specifications"), // JSON object
+  images: text("images"),
+  specifications: text("specifications"),
   stock: int("stock").default(0).notNull(),
-  rating: int("rating").default(0), // 0-5 scale * 10 for precision
+  rating: int("rating").default(0),
   reviewCount: int("reviewCount").default(0),
-  featured: int("featured").default(0), // Boolean as int
+  featured: int("featured").default(0),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
   updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
 });
@@ -84,7 +78,6 @@ export const orders = mysqlTable("orders", {
   userId: int("userId").notNull().references(() => users.id),
   orderNumber: varchar("orderNumber", { length: 50 }).notNull().unique(),
   status: mysqlEnum("status", ["pending", "confirmed", "shipped", "delivered", "cancelled"]).default("pending").notNull(),
-  // Shipping information
   shippingFirstName: varchar("shippingFirstName", { length: 100 }).notNull(),
   shippingLastName: varchar("shippingLastName", { length: 100 }).notNull(),
   shippingEmail: varchar("shippingEmail", { length: 320 }).notNull(),
@@ -94,15 +87,12 @@ export const orders = mysqlTable("orders", {
   shippingState: varchar("shippingState", { length: 100 }),
   shippingZipCode: varchar("shippingZipCode", { length: 20 }).notNull(),
   shippingCountry: varchar("shippingCountry", { length: 100 }).notNull(),
-  // Pricing
-  subtotal: int("subtotal").notNull(), // in cents
+  subtotal: int("subtotal").notNull(),
   tax: int("tax").notNull(),
   shipping: int("shipping").notNull(),
   total: int("total").notNull(),
-  // Payment
   paymentMethod: varchar("paymentMethod", { length: 50 }).notNull(),
   paymentStatus: mysqlEnum("paymentStatus", ["pending", "completed", "failed"]).default("pending").notNull(),
-  // Tracking
   trackingNumber: varchar("trackingNumber", { length: 100 }),
   estimatedDelivery: timestamp("estimatedDelivery"),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -118,7 +108,7 @@ export const orderItems = mysqlTable("orderItems", {
   productId: int("productId").notNull().references(() => products.id),
   productName: varchar("productName", { length: 255 }).notNull(),
   productImage: varchar("productImage", { length: 500 }),
-  price: int("price").notNull(), // Price at time of purchase
+  price: int("price").notNull(),
   quantity: int("quantity").notNull(),
   subtotal: int("subtotal").notNull(),
   createdAt: timestamp("createdAt").defaultNow().notNull(),
@@ -126,3 +116,26 @@ export const orderItems = mysqlTable("orderItems", {
 
 export type OrderItem = typeof orderItems.$inferSelect;
 export type InsertOrderItem = typeof orderItems.$inferInsert;
+
+// ─── WISHLIST ────────────────────────────────────────────────────────────────
+export const wishlists = mysqlTable("wishlists", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  productId: int("productId").notNull().references(() => products.id),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type Wishlist = typeof wishlists.$inferSelect;
+export type InsertWishlist = typeof wishlists.$inferInsert;
+
+// ─── BROWSING HISTORY ─────────────────────────────────────────────────────────
+export const browsingHistory = mysqlTable("browsingHistory", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull().references(() => users.id),
+  productId: int("productId").notNull().references(() => products.id),
+  viewedAt: timestamp("viewedAt").defaultNow().notNull(),
+  viewCount: int("viewCount").default(1).notNull(),
+});
+
+export type BrowsingHistory = typeof browsingHistory.$inferSelect;
+export type InsertBrowsingHistory = typeof browsingHistory.$inferInsert;

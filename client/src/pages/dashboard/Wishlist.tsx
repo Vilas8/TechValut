@@ -1,107 +1,156 @@
-import { Heart, ShoppingCart, Trash2, Search, Tag } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
-import { useState } from "react";
+import { trpc } from "@/utils/trpc";
+import { useAuth } from "@/hooks/useAuth";
+import { Link } from "wouter";
+import { Heart, ShoppingCart, Trash2, ExternalLink, PackageSearch } from "lucide-react";
+import { useCart } from "@/hooks/useCart";
 import { toast } from "sonner";
-import DashboardLayout from "./DashboardLayout";
-
-const initialWishlist = [
-  { id: 1, name: "Samsung Galaxy S24 Ultra", category: "Smartphone", price: 129999, originalPrice: 144999, inStock: true },
-  { id: 2, name: "iPad Pro M4 13\" WiFi", category: "Tablet", price: 109900, originalPrice: 119900, inStock: true },
-  { id: 3, name: "AirPods Pro 2nd Gen", category: "Audio", price: 24900, originalPrice: 26900, inStock: true },
-  { id: 4, name: "Dell XPS 15 OLED", category: "Laptop", price: 189990, originalPrice: 209990, inStock: false },
-  { id: 5, name: "Apple Watch Series 9", category: "Wearable", price: 41900, originalPrice: 44900, inStock: true },
-];
-
-const fmt = (n: number) => `₹${n.toLocaleString("en-IN")}`;
 
 export default function Wishlist() {
-  const [items, setItems] = useState(initialWishlist);
-  const [search, setSearch] = useState("");
+  const { user } = useAuth();
+  const utils = trpc.useUtils();
 
-  const remove = (id: number) => {
-    setItems((p) => p.filter((i) => i.id !== id));
-    toast.success("Removed from wishlist");
+  const { data: items, isLoading, error } = trpc.user.wishlist.useQuery(undefined, {
+    enabled: !!user,
+  });
+
+  const removeMutation = trpc.user.removeFromWishlist.useMutation({
+    onSuccess: () => {
+      utils.user.wishlist.invalidate();
+      toast.success("Removed from wishlist");
+    },
+    onError: () => toast.error("Failed to remove item"),
+  });
+
+  const { addItem } = useCart();
+
+  const handleAddToCart = (item: any) => {
+    addItem({
+      id: item.productId,
+      name: item.name,
+      price: item.price,
+      image: item.image ?? "",
+      slug: item.slug,
+      stock: item.stock,
+    });
+    toast.success(`${item.name} added to cart`);
   };
 
-  const addToCart = (name: string) => toast.success(`${name} added to cart!`);
+  const formatPrice = (p: number) =>
+    new Intl.NumberFormat("en-IN", { style: "currency", currency: "INR", maximumFractionDigits: 0 }).format(p);
 
-  const filtered = items.filter((i) => i.name.toLowerCase().includes(search.toLowerCase()));
+  if (!user) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Heart className="w-12 h-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Sign in to view your wishlist</h2>
+        <p className="text-muted-foreground mb-4">Save products you love and access them anytime.</p>
+        <Link href="/login" className="bg-primary text-primary-foreground px-6 py-2 rounded-lg hover:opacity-90 transition">
+          Sign In
+        </Link>
+      </div>
+    );
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-4">
+        <div className="flex items-center gap-3 mb-6">
+          <Heart className="w-6 h-6 text-primary" />
+          <h1 className="text-2xl font-bold">My Wishlist</h1>
+        </div>
+        {[...Array(4)].map((_, i) => (
+          <div key={i} className="animate-pulse bg-muted rounded-xl h-28" />
+        ))}
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center py-20 text-center">
+        <Heart className="w-12 h-12 text-destructive mb-4" />
+        <h2 className="text-xl font-semibold mb-2">Failed to load wishlist</h2>
+        <p className="text-muted-foreground">Please try refreshing the page.</p>
+      </div>
+    );
+  }
 
   return (
-    <DashboardLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold">Wishlist</h1>
-            <p className="text-muted-foreground text-sm mt-0.5">{items.length} items saved</p>
-          </div>
-          <div className="relative w-full sm:w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search wishlist..." className="pl-9" value={search} onChange={(e) => setSearch(e.target.value)} />
-          </div>
-        </div>
-
-        {filtered.length === 0 ? (
-          <Card className="border-border">
-            <CardContent className="text-center py-16">
-              <Heart className="h-12 w-12 text-muted-foreground/30 mx-auto mb-4" />
-              <p className="text-muted-foreground font-medium">Your wishlist is empty</p>
-              <p className="text-sm text-muted-foreground mt-1">Add items you love to your wishlist</p>
-              <Button className="mt-4" size="sm" onClick={() => window.location.href = "/products"}>
-                Browse Products
-              </Button>
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
-            {filtered.map((item) => {
-              const discount = Math.round(((item.originalPrice - item.price) / item.originalPrice) * 100);
-              return (
-                <Card key={item.id} className="border-border group hover:shadow-lg transition-shadow">
-                  <CardContent className="p-5">
-                    <div className="flex items-start justify-between mb-4">
-                      <Badge variant="secondary" className="text-xs">{item.category}</Badge>
-                      <button onClick={() => remove(item.id)} className="text-muted-foreground hover:text-destructive transition-colors">
-                        <Trash2 className="h-4 w-4" />
-                      </button>
-                    </div>
-
-                    <div className="bg-muted rounded-xl h-36 flex items-center justify-center mb-4">
-                      <Heart className="h-12 w-12 text-muted-foreground/20" />
-                    </div>
-
-                    <h3 className="font-semibold text-sm mb-2 line-clamp-2">{item.name}</h3>
-
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-lg font-bold text-primary">{fmt(item.price)}</span>
-                      <span className="text-xs text-muted-foreground line-through">{fmt(item.originalPrice)}</span>
-                      <Badge className="bg-green-500/10 text-green-600 border-0 text-xs">{discount}% OFF</Badge>
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      {!item.inStock && (
-                        <Badge variant="destructive" className="text-xs mr-1">Out of Stock</Badge>
-                      )}
-                      <Button
-                        className="flex-1 gap-2 text-xs"
-                        size="sm"
-                        disabled={!item.inStock}
-                        onClick={() => addToCart(item.name)}
-                      >
-                        <ShoppingCart className="h-3.5 w-3.5" />
-                        Add to Cart
-                      </Button>
-                    </div>
-                  </CardContent>
-                </Card>
-              );
-            })}
-          </div>
+    <div>
+      <div className="flex items-center gap-3 mb-6">
+        <Heart className="w-6 h-6 text-primary" />
+        <h1 className="text-2xl font-bold">My Wishlist</h1>
+        {items && items.length > 0 && (
+          <span className="ml-auto text-sm text-muted-foreground">{items.length} item{items.length !== 1 ? 's' : ''}</span>
         )}
       </div>
-    </DashboardLayout>
+
+      {!items || items.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-2xl">
+          <PackageSearch className="w-14 h-14 text-muted-foreground mb-4" />
+          <h2 className="text-xl font-semibold mb-2">Your wishlist is empty</h2>
+          <p className="text-muted-foreground mb-6">Browse products and click the heart icon to save items here.</p>
+          <Link href="/products" className="bg-primary text-primary-foreground px-6 py-2.5 rounded-lg hover:opacity-90 transition font-medium">
+            Browse Products
+          </Link>
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {items.map((item) => (
+            <div key={item.id} className="flex items-center gap-4 bg-card border border-border rounded-xl p-4 hover:shadow-md transition-shadow">
+              <Link href={`/product/${item.slug}`}>
+                <img
+                  src={item.image ?? "/placeholder.png"}
+                  alt={item.name}
+                  className="w-20 h-20 object-cover rounded-lg flex-shrink-0 hover:opacity-90 transition"
+                />
+              </Link>
+              <div className="flex-1 min-w-0">
+                <Link href={`/product/${item.slug}`} className="font-semibold text-foreground hover:text-primary transition line-clamp-1">
+                  {item.name}
+                </Link>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-lg font-bold text-primary">{formatPrice(item.price)}</span>
+                  {item.originalPrice && item.originalPrice > item.price && (
+                    <span className="text-sm text-muted-foreground line-through">{formatPrice(item.originalPrice)}</span>
+                  )}
+                </div>
+                <span className={`text-xs mt-1 inline-block ${
+                  item.stock > 0 ? 'text-green-600' : 'text-destructive'
+                }`}>
+                  {item.stock > 0 ? `In Stock (${item.stock} left)` : 'Out of Stock'}
+                </span>
+              </div>
+              <div className="flex flex-col gap-2 flex-shrink-0">
+                <button
+                  onClick={() => handleAddToCart(item)}
+                  disabled={item.stock === 0}
+                  className="flex items-center gap-1.5 bg-primary text-primary-foreground px-3 py-1.5 rounded-lg text-sm font-medium hover:opacity-90 transition disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <ShoppingCart className="w-4 h-4" />
+                  Add to Cart
+                </button>
+                <div className="flex gap-2">
+                  <Link
+                    href={`/product/${item.slug}`}
+                    className="flex-1 flex items-center justify-center gap-1 border border-border px-3 py-1.5 rounded-lg text-sm hover:bg-muted transition"
+                  >
+                    <ExternalLink className="w-3.5 h-3.5" />
+                    View
+                  </Link>
+                  <button
+                    onClick={() => removeMutation.mutate({ productId: item.productId })}
+                    disabled={removeMutation.isPending}
+                    className="flex items-center justify-center border border-border px-3 py-1.5 rounded-lg text-sm hover:bg-destructive/10 hover:border-destructive hover:text-destructive transition disabled:opacity-50"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }

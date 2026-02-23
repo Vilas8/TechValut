@@ -1,6 +1,10 @@
-import { eq, or, like, desc, count, sum, sql } from "drizzle-orm";
+import { eq, or, like, desc, count, sum, sql, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users, categories, products, contactSubmissions, InsertContactSubmission, orders, orderItems, InsertOrder, InsertOrderItem } from "../drizzle/schema";
+import {
+  InsertUser, users, categories, products, contactSubmissions,
+  InsertContactSubmission, orders, orderItems, InsertOrder, InsertOrderItem,
+  wishlists, browsingHistory,
+} from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -150,6 +154,113 @@ export async function getUserById(userId: number) {
   return result[0];
 }
 
+// ─── WISHLIST ────────────────────────────────────────────────────────────────
+
+export async function getWishlistByUser(userId: number) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: wishlists.id,
+      createdAt: wishlists.createdAt,
+      productId: products.id,
+      name: products.name,
+      price: products.price,
+      originalPrice: products.originalPrice,
+      image: products.image,
+      slug: products.slug,
+      stock: products.stock,
+      rating: products.rating,
+    })
+    .from(wishlists)
+    .innerJoin(products, eq(wishlists.productId, products.id))
+    .where(eq(wishlists.userId, userId))
+    .orderBy(desc(wishlists.createdAt));
+}
+
+export async function addWishlistItem(userId: number, productId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  // Prevent duplicate wishlist entries
+  const existing = await db
+    .select()
+    .from(wishlists)
+    .where(and(eq(wishlists.userId, userId), eq(wishlists.productId, productId)))
+    .limit(1);
+  if (existing[0]) return { alreadyExists: true };
+  await db.insert(wishlists).values({ userId, productId });
+  return { alreadyExists: false };
+}
+
+export async function removeWishlistItem(userId: number, productId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db
+    .delete(wishlists)
+    .where(and(eq(wishlists.userId, userId), eq(wishlists.productId, productId)));
+}
+
+export async function isInWishlist(userId: number, productId: number) {
+  const db = await getDb();
+  if (!db) return false;
+  const result = await db
+    .select()
+    .from(wishlists)
+    .where(and(eq(wishlists.userId, userId), eq(wishlists.productId, productId)))
+    .limit(1);
+  return result.length > 0;
+}
+
+// ─── BROWSING HISTORY ─────────────────────────────────────────────────────────
+
+export async function trackProductView(userId: number, productId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  const existing = await db
+    .select()
+    .from(browsingHistory)
+    .where(and(eq(browsingHistory.userId, userId), eq(browsingHistory.productId, productId)))
+    .limit(1);
+  if (existing[0]) {
+    return db
+      .update(browsingHistory)
+      .set({ viewCount: existing[0].viewCount + 1, viewedAt: new Date() })
+      .where(eq(browsingHistory.id, existing[0].id));
+  }
+  return db.insert(browsingHistory).values({ userId, productId });
+}
+
+export async function getHistoryByUser(userId: number, limit: number = 50) {
+  const db = await getDb();
+  if (!db) return [];
+  return db
+    .select({
+      id: browsingHistory.id,
+      viewedAt: browsingHistory.viewedAt,
+      viewCount: browsingHistory.viewCount,
+      productId: products.id,
+      name: products.name,
+      price: products.price,
+      originalPrice: products.originalPrice,
+      image: products.image,
+      slug: products.slug,
+      stock: products.stock,
+      rating: products.rating,
+      categoryId: products.categoryId,
+    })
+    .from(browsingHistory)
+    .innerJoin(products, eq(browsingHistory.productId, products.id))
+    .where(eq(browsingHistory.userId, userId))
+    .orderBy(desc(browsingHistory.viewedAt))
+    .limit(limit);
+}
+
+export async function clearHistory(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(browsingHistory).where(eq(browsingHistory.userId, userId));
+}
+
 // ─── ADMIN QUERIES ────────────────────────────────────────────────────────────
 
 export async function adminGetAllUsers() {
@@ -161,7 +272,6 @@ export async function adminGetAllUsers() {
 export async function adminGetAllOrders() {
   const db = await getDb();
   if (!db) return [];
-  // Join orders with users to get customer name
   const result = await db
     .select({
       id: orders.id,
@@ -186,12 +296,10 @@ export async function adminGetAllOrders() {
 export async function adminGetDashboardStats() {
   const db = await getDb();
   if (!db) return { totalRevenue: 0, totalOrders: 0, totalUsers: 0, totalProducts: 0 };
-
   const [revenueResult] = await db.select({ total: sum(orders.total) }).from(orders).where(eq(orders.paymentStatus, 'completed'));
   const [orderCount] = await db.select({ count: count() }).from(orders);
   const [userCount] = await db.select({ count: count() }).from(users);
   const [productCount] = await db.select({ count: count() }).from(products);
-
   return {
     totalRevenue: Number(revenueResult?.total ?? 0),
     totalOrders: orderCount?.count ?? 0,
@@ -235,8 +343,6 @@ export async function adminUpdateOrderStatus(orderId: number, status: string) {
 export async function adminGetAnalytics() {
   const db = await getDb();
   if (!db) return { monthlySales: [], categoryStats: [], topProducts: [] };
-
-  // Monthly revenue for last 6 months
   const monthlySales = await db.execute(sql`
     SELECT 
       DATE_FORMAT(createdAt, '%b') as month,
@@ -249,8 +355,6 @@ export async function adminGetAnalytics() {
     GROUP BY DATE_FORMAT(createdAt, '%Y-%m'), DATE_FORMAT(createdAt, '%b')
     ORDER BY yearMonth ASC
   `);
-
-  // Sales by category
   const categoryStats = await db.execute(sql`
     SELECT 
       c.name as category,
@@ -265,8 +369,6 @@ export async function adminGetAnalytics() {
     ORDER BY revenue DESC
     LIMIT 5
   `);
-
-  // Top selling products
   const topProducts = await db.execute(sql`
     SELECT 
       p.name,
@@ -282,7 +384,6 @@ export async function adminGetAnalytics() {
     ORDER BY totalSold DESC
     LIMIT 5
   `);
-
   return {
     monthlySales: (monthlySales as any[])[0] ?? [],
     categoryStats: (categoryStats as any[])[0] ?? [],
