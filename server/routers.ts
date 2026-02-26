@@ -198,6 +198,50 @@ export const appRouter = router({
       if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
       return db.adminGetAllProducts();
     }),
+
+    // ─── PRODUCT CRUD ──────────────────────────────────────────────────────────
+    createProduct: protectedProcedure
+      .input(z.object({
+        name: z.string().min(1),
+        slug: z.string().min(1),
+        description: z.string().nullable().optional(),
+        price: z.number().min(1),
+        originalPrice: z.number().nullable().optional(),
+        image: z.string().nullable().optional(),
+        stock: z.number().min(0),
+        categoryId: z.number(),
+        featured: z.number().min(0).max(1).optional().default(0),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+        return db.adminCreateProduct(input);
+      }),
+
+    updateProduct: protectedProcedure
+      .input(z.object({
+        id: z.number(),
+        name: z.string().min(1),
+        slug: z.string().min(1),
+        description: z.string().nullable().optional(),
+        price: z.number().min(1),
+        originalPrice: z.number().nullable().optional(),
+        image: z.string().nullable().optional(),
+        stock: z.number().min(0),
+        categoryId: z.number(),
+        featured: z.number().min(0).max(1).optional(),
+      }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+        const { id, ...data } = input;
+        return db.adminUpdateProduct(id, data);
+      }),
+
+    deleteProduct: protectedProcedure
+      .input(z.object({ id: z.number() }))
+      .mutation(async ({ input, ctx }) => {
+        if (ctx.user.role !== 'admin') throw new Error('Unauthorized');
+        return db.adminDeleteProduct(input.id);
+      }),
   }),
 });
 

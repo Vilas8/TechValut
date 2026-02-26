@@ -181,7 +181,6 @@ export async function getWishlistByUser(userId: number) {
 export async function addWishlistItem(userId: number, productId: number) {
   const db = await getDb();
   if (!db) throw new Error("Database not available");
-  // Prevent duplicate wishlist entries
   const existing = await db
     .select()
     .from(wishlists)
@@ -400,6 +399,8 @@ export async function adminGetAllProducts() {
       name: products.name,
       slug: products.slug,
       price: products.price,
+      originalPrice: products.originalPrice,
+      description: products.description,
       stock: products.stock,
       featured: products.featured,
       image: products.image,
@@ -410,4 +411,54 @@ export async function adminGetAllProducts() {
     .from(products)
     .leftJoin(categories, eq(products.categoryId, categories.id))
     .orderBy(desc(products.createdAt));
+}
+
+// ─── ADMIN PRODUCT CRUD ───────────────────────────────────────────────────────
+
+export async function adminCreateProduct(data: {
+  name: string;
+  slug: string;
+  description?: string | null;
+  price: number;
+  originalPrice?: number | null;
+  image?: string | null;
+  stock: number;
+  categoryId: number;
+  featured?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.insert(products).values({
+    name: data.name,
+    slug: data.slug,
+    description: data.description ?? null,
+    price: data.price,
+    originalPrice: data.originalPrice ?? null,
+    image: data.image ?? null,
+    stock: data.stock,
+    categoryId: data.categoryId,
+    featured: data.featured ?? 0,
+  });
+}
+
+export async function adminUpdateProduct(id: number, data: {
+  name?: string;
+  slug?: string;
+  description?: string | null;
+  price?: number;
+  originalPrice?: number | null;
+  image?: string | null;
+  stock?: number;
+  categoryId?: number;
+  featured?: number;
+}) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.update(products).set({ ...data, updatedAt: new Date() }).where(eq(products.id, id));
+}
+
+export async function adminDeleteProduct(id: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+  return db.delete(products).where(eq(products.id, id));
 }
