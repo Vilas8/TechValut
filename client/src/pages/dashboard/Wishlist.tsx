@@ -1,4 +1,4 @@
-import { trpc } from "@/utils/trpc";
+import { trpc } from "@/lib/trpc";
 import { useAuth } from "@/hooks/useAuth";
 import { Link } from "wouter";
 import { Heart, ShoppingCart, Trash2, ExternalLink, PackageSearch } from "lucide-react";
