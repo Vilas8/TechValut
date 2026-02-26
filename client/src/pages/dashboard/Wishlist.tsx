@@ -1,8 +1,8 @@
 import { trpc } from "@/lib/trpc";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
 import { Heart, ShoppingCart, Trash2, ExternalLink, PackageSearch } from "lucide-react";
-import { useCart } from "@/hooks/useCart";
+import { useCart } from "@/contexts/CartContext";
 import { toast } from "sonner";
 
 export default function Wishlist() {

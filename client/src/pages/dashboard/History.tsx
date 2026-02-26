@@ -1,5 +1,5 @@
-import { trpc } from "@/utils/trpc";
-import { useAuth } from "@/hooks/useAuth";
+import { trpc } from "@/lib/trpc";
+import { useAuth } from "@/contexts/AuthContext";
 import { Link } from "wouter";
 import { Clock, Trash2, ExternalLink, BarChart2, PackageSearch } from "lucide-react";
 import { toast } from "sonner";
