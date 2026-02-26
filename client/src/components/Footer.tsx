@@ -14,9 +14,6 @@ export function Footer() {
   const companyLinks = [
     { name: 'About Us', href: '/about' },
     { name: 'Contact', href: '/contact' },
-    { name: 'Blog', href: '/company/blog' },
-    { name: 'Careers', href: '/company/careers' },
-    { name: 'Press', href: '/company/press' },
   ];
 
   const supportLinks = [
@@ -105,9 +102,15 @@ export function Footer() {
         <div className="flex flex-col md:flex-row justify-between items-center gap-4 text-sm text-foreground/60">
           <p>&copy; {currentYear} TechVault. All rights reserved.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-accent transition-colors">Privacy Policy</a>
-            <a href="#" className="hover:text-accent transition-colors">Terms of Service</a>
-            <a href="#" className="hover:text-accent transition-colors">Cookie Settings</a>
+            <Link href="/privacy-policy">
+              <a className="hover:text-accent transition-colors">Privacy Policy</a>
+            </Link>
+            <Link href="/terms-of-service">
+              <a className="hover:text-accent transition-colors">Terms of Service</a>
+            </Link>
+            <Link href="/cookie-settings">
+              <a className="hover:text-accent transition-colors">Cookie Settings</a>
+            </Link>
           </div>
         </div>
       </div>

@@ -7,6 +7,7 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 import { CartProvider } from "./contexts/CartContext";
 import { AuthProvider } from "./contexts/AuthContext";
 import ProtectedRoute from "./components/ProtectedRoute";
+import { ScrollToTop } from "./components/ScrollToTop";
 import Home from "./pages/Home";
 import Products from "./pages/Products";
 import ProductDetailDynamic from "./pages/ProductDetailDynamic";
@@ -44,10 +45,10 @@ import Returns from "./pages/support/Returns";
 import FAQ from "./pages/support/FAQ";
 import ContactSupport from "./pages/support/ContactSupport";
 
-// Company Pages
-import Blog from "./pages/company/Blog";
-import Careers from "./pages/company/Careers";
-import Press from "./pages/company/Press";
+// Legal Pages
+import PrivacyPolicy from "./pages/legal/PrivacyPolicy";
+import TermsOfService from "./pages/legal/TermsOfService";
+import CookieSettings from "./pages/legal/CookieSettings";
 
 // Category Pages
 import Laptops from "./pages/categories/Laptops";
@@ -145,17 +146,17 @@ function Router() {
       <Route path="/products/wearables" component={Wearables} />
       <Route path="/products/accessories" component={Accessories} />
 
-      {/* Company Pages */}
-      <Route path="/company/blog" component={Blog} />
-      <Route path="/company/careers" component={Careers} />
-      <Route path="/company/press" component={Press} />
-
       {/* Support Pages */}
       <Route path="/support/help-center" component={HelpCenter} />
       <Route path="/support/shipping-info" component={ShippingInfo} />
       <Route path="/support/returns" component={Returns} />
       <Route path="/support/faq" component={FAQ} />
       <Route path="/support/contact" component={ContactSupport} />
+
+      {/* Legal Pages */}
+      <Route path="/privacy-policy" component={PrivacyPolicy} />
+      <Route path="/terms-of-service" component={TermsOfService} />
+      <Route path="/cookie-settings" component={CookieSettings} />
 
       {/* 404 */}
       <Route path="/404" component={NotFound} />
@@ -172,6 +173,7 @@ function App() {
           <ThemeProvider defaultTheme="light" switchable>
             <TooltipProvider>
               <Toaster />
+              <ScrollToTop />
               <Router />
             </TooltipProvider>
           </ThemeProvider>
